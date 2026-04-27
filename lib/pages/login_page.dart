@@ -94,7 +94,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _doLogin() async {
     final phone = _phoneController.text.replaceAll(RegExp(r'\D'), '');
     final pass = _passwordController.text;
-
+    
     if (phone.isEmpty || pass.isEmpty) {
       await ErrorPopup.show(
         context,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:g_project/Services/api_service.dart';
+import 'package:g_project/pages/login_page.dart';
 
 import 'GetRewards_page.dart';
 import '../core/session_store.dart';
@@ -9,9 +11,18 @@ import 'chatbot_page.dart';
 import 'map_page.dart';
 import 'settings_page.dart';
 import 'coupon_page.dart';
-class HomePage extends StatelessWidget {
+import 'offers_page.dart';
+import 'announcements_page.dart';
+import 'shops_page.dart';
+
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   static const Color tealDark = Color(0xFF2B6E7F);
   static const Color tealMid = Color(0xFF5FA9BB);
   static const Color tealLight = Color(0xFFDFF4F8);
@@ -86,13 +97,13 @@ class HomePage extends StatelessWidget {
                         onPressed: () {
                           Navigator.pop(context);
                           SessionStore.current = null;
-                          //Navigator.pushAndRemoveUntil(
-                          //  context,
-                          //  MaterialPageRoute(
-                          //    builder: (_) => const LoginPage(),
-                          //  ),
-                          // (route) => false,
-                         // );
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LoginPage(),
+                            ),
+                            (route) => false,
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: tealDark,
@@ -172,29 +183,71 @@ class HomePage extends StatelessWidget {
                         const SizedBox(height: 14),
                         _SectionHeader(
                           title: 'Coupons',
-                          onViewAll: () {
-                            Navigator.push(
+                          onViewAll: () async {
+                            final result = await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => const CouponPage(),
                               ),
                             );
+
+                            if (result == true) {
+                              setState(() {}); // 🔥 refresh points
+                            }
                           },
                         ),
                         const SizedBox(height: 10),
                         const _HorizontalCoupons(),
                         const SizedBox(height: 18),
+                        // OFFERS
                         _SectionHeader(
-                          title: 'Offers & Announcement',
-                          onViewAll: () {},
+                          title: 'Offers',
+                          onViewAll: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const OffersPage(),
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 10),
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: _AnnouncementCard(),
+                          child: _OffersList(),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        // ANNOUNCEMENTS
+                        _SectionHeader(
+                          title: 'Announcements',
+                          onViewAll: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AnnouncementsPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: _AnnouncementsList(),
                         ),
                         const SizedBox(height: 18),
-                        _SectionHeader(title: 'Shops', onViewAll: () {}),
+                        _SectionHeader(
+                          title: 'Shops',
+                          onViewAll: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ShopsPage(),
+                              ),
+                            );
+                          },
+                        ),
                         const SizedBox(height: 10),
                         const _ShopsGrid(),
                       ],
@@ -440,43 +493,11 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _HorizontalCoupons extends StatelessWidget {
+class _HorizontalCoupons extends StatefulWidget {
   const _HorizontalCoupons();
 
   @override
-  Widget build(BuildContext context) {
-    final coupons = [
-      const _CouponData(
-        bgColor: Color(0xFF0FA44A),
-        titleTop: 'Buy 2 get 1 free',
-        brand: 'SUBWAY',
-        brandColor: Color(0xFFF7D235),
-      ),
-      const _CouponData(
-        bgColor: Color(0xFFDDBA61),
-        titleTop: '30% off',
-        brand: 'max',
-        brandColor: Colors.white,
-      ),
-      const _CouponData(
-        bgColor: Color(0xFF2C79C1),
-        titleTop: '20% off',
-        brand: 'ZARA',
-        brandColor: Colors.white,
-      ),
-    ];
-
-    return SizedBox(
-      height: 98,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: coupons.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 14),
-        itemBuilder: (_, index) => _CouponCard(data: coupons[index]),
-      ),
-    );
-  }
+  State<_HorizontalCoupons> createState() => _HorizontalCouponsState();
 }
 
 class _CouponData {
@@ -540,50 +561,44 @@ class _CouponCard extends StatelessWidget {
 }
 
 class _AnnouncementCard extends StatelessWidget {
-  const _AnnouncementCard();
+  final String title;
+  final String content;
+
+  const _AnnouncementCard({required this.title, required this.content});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 175,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      height: 110,
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(right: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 3)),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Image.asset(
-                'assets/images/logo3.png',
-                width: 28,
-                height: 28,
-                fit: BoxFit.contain,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'VAT-FREE Weekend!',
-            style: TextStyle(
-              color: Color(0xFF4D7E8A),
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          Image.asset('assets/images/logo3.png', width: 28),
           const SizedBox(height: 6),
-          const Text(
-            'Valid across all stores.',
-            style: TextStyle(
-              color: Color(0xFF7FADB6),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+              color: Color(0xFF4D7E8A),
             ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            content,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF7FADB6)),
           ),
         ],
       ),
@@ -591,22 +606,54 @@ class _AnnouncementCard extends StatelessWidget {
   }
 }
 
-class _ShopsGrid extends StatelessWidget {
+class _ShopsGrid extends StatefulWidget {
   const _ShopsGrid();
 
   @override
+  State<_ShopsGrid> createState() => _ShopsGridState();
+}
+
+class _ShopsGridState extends State<_ShopsGrid> {
+  List<dynamic> stores = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchStores();
+  }
+
+  Future<void> fetchStores() async {
+    try {
+      final data = await ApiService.getStores();
+
+      setState(() {
+        stores = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("STORES ERROR = $e");
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final shops = [
-      'assets/images/shop1.png',
-      'assets/images/shop2.png',
-      'assets/images/shop3.png',
-      'assets/images/shop4.png',
-    ];
+    if (isLoading) {
+      return const SizedBox(
+        height: 120,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (stores.isEmpty) {
+      return const Center(child: Text("No stores found"));
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
-        itemCount: shops.length,
+        itemCount: stores.length > 4 ? 4 : stores.length,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -616,6 +663,8 @@ class _ShopsGrid extends StatelessWidget {
           childAspectRatio: 1.5,
         ),
         itemBuilder: (_, index) {
+          final store = stores[index];
+
           return Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -623,22 +672,37 @@ class _ShopsGrid extends StatelessWidget {
               border: Border.all(color: const Color(0xFF6DAAB4), width: 1.4),
             ),
             alignment: Alignment.center,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                shops[index],
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) {
-                  return Text(
-                    'Shop ${index + 1}',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF4D7E8A),
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (store['storeImageUrl'] != null &&
+                    store['storeImageUrl'].toString().isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      store['storeImageUrl'],
+                      height: 50,
+                      width: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.store, size: 40),
                     ),
-                  );
-                },
-              ),
+                  )
+                else
+                  const Icon(Icons.store, size: 40),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  store['name'] ?? '',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -714,16 +778,16 @@ class _HomeDrawer extends StatelessWidget {
               },
             ),
             _DrawerTile(
-                icon: Icons.settings_outlined,
-                title: 'Settings',
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SettingsPage()),
-                  );
-                },
-              ),
+              icon: Icons.settings_outlined,
+              title: 'Settings',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsPage()),
+                );
+              },
+            ),
             _DrawerTile(
               icon: Icons.history,
               title: 'Transactions',
@@ -846,3 +910,188 @@ class _HomeBottomNavBar extends StatelessWidget {
   }
 }
 
+class _OffersList extends StatelessWidget {
+  const _OffersList();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 120,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: const [
+          _AnnouncementsList(),
+          SizedBox(width: 10),
+          _AnnouncementsList(),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnnouncementsList extends StatefulWidget {
+  const _AnnouncementsList();
+
+  @override
+  State<_AnnouncementsList> createState() => _AnnouncementsListState();
+}
+
+class _AnnouncementsListState extends State<_AnnouncementsList> {
+  List<dynamic> announcements = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchAnnouncements();
+  }
+
+  Future<void> fetchAnnouncements() async {
+    try {
+      final data = await ApiService.getAnnouncements();
+      setState(() {
+        announcements = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      print(e);
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (announcements.isEmpty) {
+      return const Text("No announcements");
+    }
+
+    return SizedBox(
+      height: 120,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: announcements.length,
+        itemBuilder: (context, index) {
+          final item = announcements[index];
+
+          return _AnnouncementCard(
+            title: item['title'] ?? '',
+            content: item['content'] ?? '',
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _HorizontalCouponsState extends State<_HorizontalCoupons> {
+  List<dynamic> coupons = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchCoupons();
+  }
+
+  Future<void> fetchCoupons() async {
+    try {
+      final couponsData = await ApiService.getCoupons();
+
+      // 🔥 get user redeemed coupons
+      final userCoupons = await ApiService.getUserCoupons();
+
+      final redeemedIds = userCoupons.map((e) => e['couponId']).toSet();
+
+      final filtered = couponsData
+          .where((c) => !redeemedIds.contains(c['id']))
+          .toList();
+
+      setState(() {
+        coupons = filtered;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("ERROR COUPONS = $e");
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const SizedBox(
+        height: 98,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (coupons.isEmpty) {
+      return const SizedBox(
+        height: 98,
+        child: Center(child: Text("No coupons available")),
+      );
+    }
+
+    return SizedBox(
+      height: 120,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: coupons.length,
+        itemBuilder: (context, index) {
+          final item = coupons[index];
+
+          return Container(
+            width: 160,
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4D7E8A),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  item['type'] ?? '',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                Flexible(
+                  child: Text(
+                    item['discription'] ?? '',
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  "${item['costPoint'] ?? 0} pts",
+                  style: const TextStyle(
+                    color: Colors.yellow,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}

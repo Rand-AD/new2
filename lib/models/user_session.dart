@@ -1,31 +1,34 @@
 class UserSession {
-  final String message;
-  final String userId;
-  final String phoneNumber;
   final String name;
+  final String phoneNumber;
   final int totalPoints;
-  final String role;
   final String sessionId;
 
+  final String? message;
+  final String? userId;
+  final String? role;
+
   UserSession({
-    required this.message,
-    required this.userId,
-    required this.phoneNumber,
     required this.name,
+    required this.phoneNumber,
     required this.totalPoints,
-    required this.role,
     required this.sessionId,
+    this.message,
+    this.userId,
+    this.role,
   });
 
   factory UserSession.fromJson(Map<String, dynamic> json) {
     return UserSession(
-      message: (json["message"] ?? "").toString(),
-      userId: (json["userId"] ?? "").toString(),
-      phoneNumber: (json["phoneNumber"] ?? "").toString(),
-      name: (json["name"] ?? "").toString(),
+      name: json["name"]?.toString() ?? "",
+      phoneNumber: json["phoneNumber"]?.toString() ?? "",
       totalPoints: _toInt(json["totalPoints"]),
-      role: (json["role"] ?? "").toString(),
-      sessionId: (json["sessionId"] ?? "").toString(),
+      sessionId: json["sessionId"]?.toString() ?? "",
+
+      // optional fields
+      message: json["message"]?.toString(),
+      userId: json["userId"]?.toString(),
+      role: json["role"]?.toString(),
     );
   }
 
@@ -33,4 +36,23 @@ class UserSession {
     if (v is int) return v;
     return int.tryParse((v ?? "0").toString()) ?? 0;
   }
+  UserSession copyWith({
+  String? name,
+  String? phoneNumber,
+  int? totalPoints,
+  String? sessionId,
+  String? message,
+  String? userId,
+  String? role,
+}) {
+  return UserSession(
+    name: name ?? this.name,
+    phoneNumber: phoneNumber ?? this.phoneNumber,
+    totalPoints: totalPoints ?? this.totalPoints,
+    sessionId: sessionId ?? this.sessionId,
+    message: message ?? this.message,
+    userId: userId ?? this.userId,
+    role: role ?? this.role,
+  );
+}
 }

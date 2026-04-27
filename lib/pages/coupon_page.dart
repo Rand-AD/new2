@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../core/session_store.dart';
+import 'my_coupons_page.dart';
 
 class CouponPage extends StatefulWidget {
   const CouponPage({super.key});
@@ -23,37 +24,93 @@ class _CouponPageState extends State<CouponPage> {
     getCoupons();
   }
 
+  Future<void> redeemCoupon(String couponId, int index) async {
+    try {
+      final sessionId = SessionStore.current?.sessionId;
+
+      final response = await http.post(
+        Uri.parse("$baseUrl/api/Coupons/redeem"),
+        headers: {
+          "Content-Type": "application/json",
+          "X-Session-Id": sessionId ?? "",
+        },
+        body: jsonEncode({"couponId": couponId}),
+      );
+
+      print("REDEEM STATUS = ${response.statusCode}");
+      print("REDEEM BODY = ${response.body}");
+
+      if (response.statusCode == 200) {
+        final cost = coupons[index]['costPoint'] ?? 0;
+
+        // ✅ update points
+        final old = SessionStore.current!;
+        SessionStore.current = old.copyWith(
+          totalPoints: (old.totalPoints - cost).toInt(),
+        );
+
+        // ✅ refresh coupons from API (removes redeemed ones)
+        await getCoupons();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Coupon redeemed successfully")),
+        );
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: ${response.body}")));
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
   // ================= GET COUPONS =================
   Future<void> getCoupons() async {
     try {
-      print("SESSION = ${SessionStore.current?.sessionId}");
+      final sessionId = SessionStore.current?.sessionId;
+
       final response = await http.get(
-        Uri.parse(
-          "$baseUrl/api/Coupons?isActive=true&sessionId=${SessionStore.current?.sessionId}",
-        ),
+        Uri.parse("$baseUrl/api/Coupons?isActive=true"),
         headers: {
           "Content-Type": "application/json",
-          "session-id": SessionStore.current?.sessionId ?? "",
+          "X-Session-Id": sessionId ?? "",
         },
       );
-      print("SESSION HEADER SENT = ${SessionStore.current?.sessionId}");
-      print("SESSION = ${SessionStore.current?.sessionId}");
-      print(response.body);
-      print("COUPONS RESPONSE = ${response.body}");
+
+      print("STATUS = ${response.statusCode}");
+      print("BODY = ${response.body}");
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-
+        final myCoupons = await getMyCouponsIds();
         setState(() {
-          coupons = data;
+          coupons = data.where((c) => !myCoupons.contains(c['id'])).toList();
           isLoading = false;
         });
       } else {
         setState(() => isLoading = false);
       }
     } catch (e) {
-      print(e);
+      print("ERROR = $e");
       setState(() => isLoading = false);
     }
+  }
+
+  Future<List<String>> getMyCouponsIds() async {
+    final sessionId = SessionStore.current?.sessionId;
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/Coupons/user"),
+      headers: {"X-Session-Id": sessionId ?? ""},
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data.map<String>((e) => e['couponId'].toString()).toList();
+    }
+
+    return [];
   }
 
   // ================= UI =================
@@ -63,6 +120,17 @@ class _CouponPageState extends State<CouponPage> {
       appBar: AppBar(
         title: const Text("Coupons"),
         backgroundColor: const Color(0xFF5FA9BB),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.card_giftcard),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MyCouponsPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -74,41 +142,71 @@ class _CouponPageState extends State<CouponPage> {
               itemBuilder: (context, index) {
                 final item = coupons[index];
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 6,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item['title'] ?? "No title",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                return GestureDetector(
+                  onTap: () async {
+                    final confirm = await showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text("Redeem Coupon"),
+                        content: const Text(
+                          "Are you sure you want to redeem this coupon?",
                         ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text("Cancel"),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text("Redeem"),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      Text(item['description'] ?? ""),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Discount: ${item['discount'] ?? ''}",
-                        style: const TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
+                    );
+
+                    if (confirm == true) {
+                      redeemCoupon(item['id'], index);
+                    }
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item['type'] ?? "No type",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+
+                        Text(item['discription'] ?? ""),
+
+                        const SizedBox(height: 8),
+
+                        Text(
+                          "Cost: ${item['costPoint'] ?? ''} points",
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },

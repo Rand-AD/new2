@@ -22,20 +22,20 @@ class AuthService {
       data: {
         "phoneNumber": phoneNumber,
         "password": password,
-        "mallId": mallId,
+        "mallId": "c424a18c-cca0-4523-a01d-d70a87ff059f",
       },
     );
-
+    print(response.data);
     final data = response.data;
 
+    // 🔥 PRINT TO SEE STRUCTURE (IMPORTANT)
+    print("LOGIN RESPONSE: $data");
+
     return UserSession(
-      message: data['message'] ?? "",
-      userId: data['userId'],
-      name: data['name'],
-      phoneNumber: data['phoneNumber'],
+      name: data['name'] ?? "",
+      phoneNumber: data['phoneNumber'] ?? "",
       totalPoints: data['totalPoints'] ?? 0,
-      role: data['role'],
-      sessionId: data['sessionId'],
+      sessionId: data['sessionId'] ?? data['token'] ?? "", // 🔥 HANDLE BOTH
     );
   }
 
