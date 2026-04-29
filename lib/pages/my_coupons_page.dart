@@ -28,14 +28,13 @@ class _MyCouponsPageState extends State<MyCouponsPage> {
 
     final response = await http.get(
       Uri.parse("$baseUrl/api/Coupons/user"),
-      headers: {
-        "X-Session-Id": sessionId ?? "",
-      },
+      headers: {"X-Session-Id": sessionId ?? ""},
     );
 
     if (response.statusCode == 200) {
       setState(() {
         myCoupons = json.decode(response.body);
+
         isLoading = false;
       });
     } else {
@@ -62,9 +61,7 @@ class _MyCouponsPageState extends State<MyCouponsPage> {
                   trailing: Text(
                     item['isRedeemed'] ? "Used" : "Active",
                     style: TextStyle(
-                      color: item['isRedeemed']
-                          ? Colors.red
-                          : Colors.green,
+                      color: item['isRedeemed'] ? Colors.red : Colors.green,
                     ),
                   ),
                 );

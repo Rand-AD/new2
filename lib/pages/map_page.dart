@@ -1,175 +1,164 @@
 import 'package:flutter/material.dart';
 
-class MapPage extends StatelessWidget {
+class MapPage extends StatefulWidget {
   const MapPage({super.key});
 
-  static const Color tealDark = Color(0xFF2B6E7F);
-  static const Color tealMid = Color(0xFF5FA9BB);
-  static const Color pageBg = Color(0xFFF6F6F6);
+  @override
+  State<MapPage> createState() => _MapPageState();
+}
+
+class _MapPageState extends State<MapPage> {
+  int currentFloor = 0;
+  TransformationController _controller = TransformationController();
+  final List<String> maps = [
+    'assets/maps/ground.png',
+    'assets/maps/first.png',
+    'assets/maps/second.png',
+    'assets/maps/third.png',
+  ];
+
+  final List<String> floorNames = [
+    "Ground Floor",
+    "First Floor",
+    "Second Floor",
+    "Third Floor",
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final shops = [
-      {'name': 'ZARA', 'floor': 'First Floor', 'icon': Icons.checkroom},
-      {'name': 'SUBWAY', 'floor': 'Ground Floor', 'icon': Icons.fastfood},
-      {'name': 'MAX', 'floor': 'Second Floor', 'icon': Icons.shopping_bag},
-      {'name': 'Cinema', 'floor': 'Third Floor', 'icon': Icons.movie},
-    ];
-
     return Scaffold(
-      backgroundColor: pageBg,
-      appBar: AppBar(
-        backgroundColor: tealMid,
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          'Mall Map',
-          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Container(
-              height: 220,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, 3),
+      backgroundColor: const Color(0xFF0F172A),
+
+      // ✅ BODY
+      body: Stack(
+        children: [
+          // 🔹 Map Viewer (Zoomable)
+          Positioned.fill(
+            child: Stack(
+              children: [
+                /// 🔹 Blurred Background (fix ugly empty space)
+                Positioned.fill(
+                  child: Image.asset(
+                    maps[currentFloor],
+                    fit: BoxFit.cover,
+                    color: Colors.black.withOpacity(0.4),
+                    colorBlendMode: BlendMode.darken,
                   ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Icon(
-                      Icons.map_outlined,
-                      size: 120,
-                      color: Colors.grey.shade300,
+                ),
+
+                /// 🔹 Zoomable Map (fixed zoom)
+                Positioned.fill(
+                  child: InteractiveViewer(
+                    transformationController: _controller,
+                    minScale: 1,
+                    maxScale: 6,
+                    panEnabled: true,
+                    scaleEnabled: true,
+                    child: Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          maps[currentFloor],
+                          fit: BoxFit.contain,
+                        ),
+                      ),
                     ),
                   ),
-                  Positioned(
-                    top: 40,
-                    left: 50,
-                    child: _marker('ZARA'),
-                  ),
-                  Positioned(
-                    top: 120,
-                    right: 40,
-                    child: _marker('MAX'),
-                  ),
-                  Positioned(
-                    bottom: 35,
-                    left: 80,
-                    child: _marker('SUBWAY'),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(height: 18),
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'Search for a store...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
+          ),
+
+          // 🔹 Top Title
+          Positioned(
+            top: 50,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                floorNames[currentFloor],
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            const SizedBox(height: 18),
-            ListView.separated(
-              itemCount: shops.length,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final shop = shops[index];
-                return Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: tealMid.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          shop['icon'] as IconData,
-                          color: tealDark,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              shop['name'] as String,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              shop['floor'] as String,
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                    ],
-                  ),
-                );
+          ),
+          Positioned(
+            right: 16,
+            bottom: 110,
+            child: FloatingActionButton(
+              backgroundColor: Colors.deepPurple,
+              onPressed: () {
+                _controller.value = Matrix4.identity();
               },
+              child: const Icon(Icons.center_focus_strong),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+
+      // ✅ FIXED FOOTER
+      bottomNavigationBar: _buildFloorSelector(),
     );
   }
 
-  Widget _marker(String label) {
-    return Column(
-      children: [
-        const Icon(Icons.location_on, color: Colors.redAccent, size: 28),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: tealDark,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+  // 🔹 Floor Selector Buttons
+  Widget _buildFloorSelector() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(maps.length, (index) {
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  currentFloor = index;
+                  _controller.value = Matrix4.identity(); // ✅ reset zoom
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: currentFloor == index
+                      ? const LinearGradient(
+                          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                        )
+                      : null,
+                  color: currentFloor == index ? null : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  floorNames[index],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: currentFloor == index ? Colors.white : Colors.black,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
+          );
+        }),
+      ),
     );
   }
 }

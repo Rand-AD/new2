@@ -4,6 +4,7 @@ import 'home_page.dart';
 import 'map_page.dart';
 import 'chatbot_page.dart';
 import 'notifications_page.dart';
+import 'my_coupons_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -72,8 +73,8 @@ class ProfilePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  width: 140,
-                  height: 140,
+                  width: 220,
+                  height: 220,
                   color: Colors.white,
                   padding: const EdgeInsets.all(12),
                   child: Image.asset(
@@ -94,9 +95,9 @@ class ProfilePage extends StatelessWidget {
                       children: [
                         const Divider(color: whiteSoft, thickness: 1),
                         const SizedBox(height: 12),
-                        _infoRow('Your Points Value', '10 jds'),
+                        
                         const SizedBox(height: 10),
-                        _infoRow('Your Points Balance', '$points pts'),
+                        _infoRow('Points Balance', '$points pts'),
                         const SizedBox(height: 12),
                         const Divider(color: whiteSoft, thickness: 1),
                         const SizedBox(height: 16),
@@ -105,6 +106,47 @@ class ProfilePage extends StatelessWidget {
                         _infoRow('Last Name', lastName),
                         const SizedBox(height: 10),
                         _infoRow('Phone Number', phone),
+                        const SizedBox(height: 20),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const MyCouponsPage(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 6,
+                                  offset: Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.local_offer, color: Color(0xFF2B6E7F)),
+                                SizedBox(width: 8),
+                                Text(
+                                  "My Coupons",
+                                  style: TextStyle(
+                                    color: Color(0xFF2B6E7F),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                         const Spacer(),
                       ],
                     ),
@@ -127,8 +169,8 @@ class ProfilePage extends StatelessWidget {
             title,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 13.5,
-              fontWeight: FontWeight.w400,
+              fontSize: 16, // 🔥 bigger
+              fontWeight: FontWeight.bold, // 🔥 bold
             ),
           ),
         ),

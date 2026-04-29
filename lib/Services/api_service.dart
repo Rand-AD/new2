@@ -60,7 +60,32 @@ class ApiService {
       throw Exception(response.body);
     }
   }
+  
+  static Future<Map<String, dynamic>> getTransaction(int id) async {
+  final response = await http.get(
+    Uri.parse("$baseUrl/Transactions/$id"),
+    headers: headers,
+  );
 
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  } else {
+    throw Exception(response.body);
+  }
+}
+
+  static Future<Map<String, dynamic>> getMyReceipts() async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/Transactions/my-receipts"),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(response.body);
+    }
+  }
   // ================= GET COUPONS =================
   static Future<List<dynamic>> getCoupons() async {
     try {

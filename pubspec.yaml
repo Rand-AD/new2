@@ -35,7 +35,7 @@ flutter:
     - assets/images/qr.png
     - assets/images/max_logo.jpeg
     - assets/images/subway_logo.png
-    
+    - assets/maps/
   fonts:
     - family: Judson
       fonts:

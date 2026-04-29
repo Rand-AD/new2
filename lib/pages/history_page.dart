@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../Services/api_service.dart';
+import 'receipt_page.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -14,46 +16,41 @@ class _HistoryPageState extends State<HistoryPage> {
 
   String selectedFilter = 'All';
 
-  final List<Map<String, dynamic>> transactions = [
-    {
-      'store': 'ZARA',
-      'action': 'Redeemed',
-      'points': -200,
-      'date': '12 Feb 2026',
-      'status': 'Completed',
-      'icon': Icons.local_offer_outlined,
-    },
-    {
-      'store': 'SUBWAY',
-      'action': 'Earned',
-      'points': 50,
-      'date': '10 Feb 2026',
-      'status': 'Completed',
-      'icon': Icons.fastfood_outlined,
-    },
-    {
-      'store': 'MAX',
-      'action': 'Earned',
-      'points': 120,
-      'date': '08 Feb 2026',
-      'status': 'Completed',
-      'icon': Icons.shopping_bag_outlined,
-    },
-    {
-      'store': 'H&M',
-      'action': 'Redeemed',
-      'points': -150,
-      'date': '05 Feb 2026',
-      'status': 'Pending',
-      'icon': Icons.card_giftcard_outlined,
-    },
-  ];
+  List<dynamic> transactions = [];
+  bool isLoading = true;
 
-  List<Map<String, dynamic>> get filteredTransactions {
+  List<dynamic> get filteredTransactions {
     if (selectedFilter == 'All') return transactions;
-    return transactions
-        .where((item) => item['action'] == selectedFilter)
-        .toList();
+
+    if (selectedFilter == 'Earned') {
+      return transactions.where((t) => (t['pointsEarned'] ?? 0) > 0).toList();
+    }
+
+    if (selectedFilter == 'Redeemed') {
+      return transactions.where((t) => (t['pointsEarned'] ?? 0) <= 0).toList();
+    }
+
+    return transactions;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchTransactions();
+  }
+
+  Future<void> fetchTransactions() async {
+    try {
+      final data = await ApiService.getMyReceipts();
+
+      setState(() {
+        transactions = data['items']; // 🔥 important
+        isLoading = false;
+      });
+    } catch (e) {
+      print("ERROR = $e");
+      setState(() => isLoading = false);
+    }
   }
 
   @override
@@ -99,108 +96,128 @@ class _HistoryPageState extends State<HistoryPage> {
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final item = filteredTransactions[index];
-                      final int points = item['points'];
-                      final bool isPositive = points > 0;
+                      final points = item['pointsEarned'] ?? 0;
+                      final isPositive = points > 0;
+                      final storeName = item['storeName'] ?? 'Store';
+                      final date = item['createdAt'] ?? '';
+                      final status = item['status'] ?? 'completed';
 
-                      return Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 8,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: tealMid.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                item['icon'],
-                                color: tealDark,
-                                size: 26,
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ReceiptPage(
+                                transactionId: item['transactionId'],
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 8,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: tealMid.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.receipt_long,
+                                  color: tealDark,
+                                  size: 26,
+                                ),
+                              ),
+
+                              const SizedBox(width: 12),
+
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      storeName,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      isPositive ? "Earned" : "Redeemed",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      date.isNotEmpty
+                                          ? date.substring(0, 10)
+                                          : '',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    item['store'],
-                                    style: const TextStyle(
-                                      fontSize: 16,
+                                    '${isPositive ? '+' : ''}$points pts',
+                                    style: TextStyle(
+                                      color: isPositive
+                                          ? Colors.green
+                                          : Colors.redAccent,
+                                      fontSize: 15,
                                       fontWeight: FontWeight.w800,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    item['action'],
-                                    style: TextStyle(
-                                      color: Colors.grey.shade700,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    item['date'],
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 12,
+                                    decoration: BoxDecoration(
+                                      color: status == 'completed'
+                                          ? Colors.green.withOpacity(0.12)
+                                          : Colors.orange.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      status,
+                                      style: TextStyle(
+                                        color: status == 'completed'
+                                            ? Colors.green
+                                            : Colors.orange,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '${isPositive ? '+' : ''}$points pts',
-                                  style: TextStyle(
-                                    color: isPositive
-                                        ? Colors.green
-                                        : Colors.redAccent,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: item['status'] == 'Completed'
-                                        ? Colors.green.withOpacity(0.12)
-                                        : Colors.orange.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    item['status'],
-                                    style: TextStyle(
-                                      color: item['status'] == 'Completed'
-                                          ? Colors.green
-                                          : Colors.orange,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     },
