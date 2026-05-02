@@ -17,7 +17,8 @@ class _OffersPageState extends State<OffersPage> {
     super.initState();
 
     final sessionId = SessionStore.current?.sessionId ?? "";
-
+    print("SESSION RAW = ${SessionStore.current}");
+    print("SESSION ID = $sessionId");
     offers = OffersService.getOffers(sessionId);
   }
 

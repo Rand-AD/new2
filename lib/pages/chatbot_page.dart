@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../core/session_store.dart';
 
 class ChatBotPage extends StatefulWidget {
   const ChatBotPage({super.key});
@@ -32,8 +33,13 @@ class _ChatBotPageState extends State<ChatBotPage> {
   // ================= GET HISTORY =================
   Future<void> loadHistory() async {
     try {
+      final sessionId = SessionStore.current?.sessionId ?? "";
+
       final response = await http.get(
         Uri.parse("$baseUrl/api/Chatbot/history"),
+        headers: {
+          "X-Session-Id": sessionId, // ✅ FIX
+        },
       );
 
       if (response.statusCode == 200) {
@@ -73,9 +79,41 @@ class _ChatBotPageState extends State<ChatBotPage> {
     _controller.clear();
 
     try {
+      final lowerText = text.toLowerCase();
+
+      if (lowerText.contains("points")) {
+        final sessionId = SessionStore.current?.sessionId ?? "";
+
+        final res = await http.get(
+          Uri.parse("$baseUrl/api/userinfo/points"),
+          headers: {"X-Session-Id": sessionId},
+        );
+
+        if (res.statusCode == 200) {
+          final data = json.decode(res.body);
+
+          setState(() {
+            messages.add({
+              'text': "You have ${data['totalPoints']} points",
+              'isUser': false,
+            });
+          });
+        } else {
+          setState(() {
+            messages.add({'text': "Failed to fetch points", 'isUser': false});
+          });
+        }
+
+        return; // 🔥 VERY IMPORTANT (stops chatbot call)
+      }
+
+      final sessionId = SessionStore.current?.sessionId ?? "";
       final response = await http.post(
         Uri.parse("$baseUrl/api/Chatbot/ask"),
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+          "X-Session-Id": sessionId, // ✅ FIX
+        },
         body: json.encode({
           "message": text,
           "conversationSessionId": conversationId.isEmpty
@@ -94,7 +132,7 @@ class _ChatBotPageState extends State<ChatBotPage> {
             'isUser': false,
           });
 
-          conversationId = data['conversationId'] ?? conversationId;
+          conversationId = data['conversationSessionId'] ?? conversationId;
         });
       } else {
         setState(() {

@@ -22,7 +22,13 @@ class _ShopsPageState extends State<ShopsPage> {
     try {
       final data = await ApiService.getStores();
       setState(() {
-        stores = data;
+        stores = data
+            .where(
+              (s) =>
+                  s['storeImageUrl'] != null &&
+                  s['storeImageUrl'].toString().isNotEmpty,
+            )
+            .toList();
         isLoading = false;
       });
     } catch (e) {
@@ -52,7 +58,34 @@ class _ShopsPageState extends State<ShopsPage> {
                     border: Border.all(color: const Color(0xFF6DAAB4)),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Center(child: Text(store['name'] ?? '')),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (store['storeImageUrl'] != null &&
+                          store['storeImageUrl'].toString().isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            store['storeImageUrl'],
+                            height: 60,
+                            width: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.store, size: 40),
+                          ),
+                        )
+                      else
+                        const Icon(Icons.store, size: 40),
+
+                      const SizedBox(height: 8),
+
+                      Text(
+                        store['name'] ?? '',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),

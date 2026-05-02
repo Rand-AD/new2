@@ -1,14 +1,9 @@
 import 'package:dio/dio.dart';
 import '../models/user_session.dart';
+import '../core/api_client.dart';
 
 class AuthService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl:
-          "https://yallarewards-hfhxdxerb8caa8g9.switzerlandnorth-01.azurewebsites.net",
-      headers: {"Content-Type": "application/json"},
-    ),
-  );
+  final Dio _dio = ApiClient.dio;
 
   final String mallId = "c424a18c-cca0-4523-a01d-d70a87ff059f";
 

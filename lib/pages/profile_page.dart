@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
 import '../core/session_store.dart';
-import 'home_page.dart';
-import 'map_page.dart';
-import 'chatbot_page.dart';
-import 'notifications_page.dart';
 import 'my_coupons_page.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -95,7 +91,7 @@ class ProfilePage extends StatelessWidget {
                       children: [
                         const Divider(color: whiteSoft, thickness: 1),
                         const SizedBox(height: 12),
-                        
+
                         const SizedBox(height: 10),
                         _infoRow('Points Balance', '$points pts'),
                         const SizedBox(height: 12),
@@ -133,7 +129,10 @@ class ProfilePage extends StatelessWidget {
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.local_offer, color: Color(0xFF2B6E7F)),
+                                Icon(
+                                  Icons.local_offer,
+                                  color: Color(0xFF2B6E7F),
+                                ),
                                 SizedBox(width: 8),
                                 Text(
                                   "My Coupons",
@@ -157,7 +156,6 @@ class ProfilePage extends StatelessWidget {
           ),
         ],
       ),
-      bottomNavigationBar: _AppBottomNav(currentIndex: 4),
     );
   }
 
@@ -181,77 +179,6 @@ class ProfilePage extends StatelessWidget {
             fontSize: 13.5,
             fontWeight: FontWeight.w400,
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AppBottomNav extends StatelessWidget {
-  const _AppBottomNav({required this.currentIndex});
-
-  final int currentIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color(0xFF5FA9BB),
-      unselectedItemColor: Colors.grey,
-      selectedFontSize: 11,
-      unselectedFontSize: 11,
-      onTap: (index) {
-        if (index == currentIndex) return;
-
-        Widget page;
-        switch (index) {
-          case 0:
-            page = const HomePage();
-            break;
-          case 1:
-            page = const MapPage();
-            break;
-          case 2:
-            page = const ChatBotPage();
-            break;
-          case 3:
-            page = const NotificationsPage();
-            break;
-          default:
-            page = const ProfilePage();
-        }
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => page),
-        );
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.map_outlined),
-          activeIcon: Icon(Icons.map),
-          label: 'Map',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble_outline),
-          activeIcon: Icon(Icons.chat_bubble),
-          label: 'ChatBot',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.notifications_none),
-          activeIcon: Icon(Icons.notifications),
-          label: 'Notifications',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
-          label: 'Profile',
         ),
       ],
     );

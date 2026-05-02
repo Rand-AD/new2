@@ -94,7 +94,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _doLogin() async {
     final phone = _phoneController.text.replaceAll(RegExp(r'\D'), '');
     final pass = _passwordController.text;
-    
+
     if (phone.isEmpty || pass.isEmpty) {
       await ErrorPopup.show(
         context,
@@ -107,18 +107,20 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final UserSession session = await _auth.login(
-      phoneNumber: phone,
-      password: pass,
-    );
+        phoneNumber: phone,
+        password: pass,
+      );
 
       SessionStore.current = session;
 
       if (!mounted) return;
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
+      Future.microtask(() {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      });
     } on DioException catch (e) {
       final extracted = _extractApiMessage(e.response?.data);
 

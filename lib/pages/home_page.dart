@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:g_project/Services/api_service.dart';
+import 'package:g_project/Services/offers_service.dart';
 import 'package:g_project/pages/login_page.dart';
 
-import 'GetRewards_page.dart';
+
 import '../core/session_store.dart';
 import 'history_page.dart';
 import 'profile_page.dart';
@@ -23,9 +24,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  int _currentIndex = 0;
   static const Color tealDark = Color(0xFF2B6E7F);
-  static const Color tealMid = Color(0xFF5FA9BB);
-  static const Color tealLight = Color(0xFFDFF4F8);
+  //static const Color tealMid = Color(0xFF5FA9BB);
+  //static const Color tealLight = Color(0xFFDFF4F8);
   static const Color pageBg = Color(0xFFF6F6F6);
 
   String _formatPoints(int points) {
@@ -39,6 +41,134 @@ class _HomePageState extends State<HomePage> {
       }
     }
     return buf.toString();
+  }
+
+  Widget _buildHomeContent() {
+    final session = SessionStore.current;
+
+    final String name = (session?.name.trim().isNotEmpty ?? false)
+        ? session!.name
+        : 'Guest User';
+
+    final String phone = (session?.phoneNumber.trim().isNotEmpty ?? false)
+        ? session!.phoneNumber
+        : '—';
+
+    final String points = (session != null)
+        ? _formatPoints(session.totalPoints)
+        : '0';
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Builder(
+              builder: (context) {
+                return _HomeHeader(
+                  userName: name,
+                  onMenuTap: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                );
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            _NewLoyaltyCard(
+              name: name.toUpperCase(),
+              phone: phone,
+              points: points,
+            ),
+
+            const SizedBox(height: 20),
+
+            _SectionHeader(
+              title: 'Coupons',
+              onViewAll: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CouponPage()),
+                );
+              },
+            ),
+
+            const SizedBox(height: 10),
+            const _HorizontalCoupons(),
+
+            const SizedBox(height: 20),
+
+            _SectionHeader(
+              title: 'Offers',
+              onViewAll: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const OffersPage()),
+                );
+              },
+            ),
+
+            const SizedBox(height: 10),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: _OffersList(),
+            ),
+
+            const SizedBox(height: 20),
+
+            _SectionHeader(
+              title: 'Announcements',
+              onViewAll: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AnnouncementsPage()),
+                );
+              },
+            ),
+
+            const SizedBox(height: 10),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: _AnnouncementsList(),
+            ),
+
+            const SizedBox(height: 20),
+
+            _SectionHeader(
+              title: 'Shops',
+              onViewAll: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ShopsPage()),
+                );
+              },
+            ),
+
+            const SizedBox(height: 10),
+            const _ShopsGrid(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _getPage() {
+    switch (_currentIndex) {
+      case 0:
+        return _buildHomeContent(); // your current home UI
+      case 1:
+        return const MapPage();
+      case 2:
+        return const ChatBotPage();
+      case 3:
+        return const NotificationsPage();
+      case 4:
+        return const ProfilePage();
+      default:
+        return _buildHomeContent();
+    }
   }
 
   Future<void> _showLogoutDialog(BuildContext context) async {
@@ -144,121 +274,21 @@ class _HomePageState extends State<HomePage> {
         ? session!.name
         : 'Guest User';
 
-    final String phone = (session?.phoneNumber.trim().isNotEmpty ?? false)
-        ? session!.phoneNumber
-        : '—';
-
-    final String points = (session != null)
-        ? _formatPoints(session.totalPoints)
-        : '0';
-
     return Scaffold(
       backgroundColor: pageBg,
       drawer: _HomeDrawer(
         name: name,
         onLogoutTap: () => _showLogoutDialog(context),
       ),
-      bottomNavigationBar: const _HomeBottomNavBar(),
-      body: Builder(
-        builder: (context) {
-          return SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _HomeHeader(
-                    userName: name,
-                    onMenuTap: () => Scaffold.of(context).openDrawer(),
-                  ),
-                  Transform.translate(
-                    offset: const Offset(0, -28),
-                    child: Column(
-                      children: [
-                        _NewLoyaltyCard(
-                          name: name.toUpperCase(),
-                          phone: phone,
-                          points: points,
-                        ),
-                        const SizedBox(height: 14),
-                        _SectionHeader(
-                          title: 'Coupons',
-                          onViewAll: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const CouponPage(),
-                              ),
-                            );
-
-                            if (result == true) {
-                              setState(() {}); // 🔥 refresh points
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        const _HorizontalCoupons(),
-                        const SizedBox(height: 18),
-                        // OFFERS
-                        _SectionHeader(
-                          title: 'Offers',
-                          onViewAll: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const OffersPage(),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: _OffersList(),
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        // ANNOUNCEMENTS
-                        _SectionHeader(
-                          title: 'Announcements',
-                          onViewAll: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const AnnouncementsPage(),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: _AnnouncementsList(),
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionHeader(
-                          title: 'Shops',
-                          onViewAll: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ShopsPage(),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        const _ShopsGrid(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
+      bottomNavigationBar: _HomeBottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
         },
       ),
+      body: _getPage(),
     );
   }
 }
@@ -845,40 +875,19 @@ class _DrawerTile extends StatelessWidget {
 }
 
 class _HomeBottomNavBar extends StatelessWidget {
-  const _HomeBottomNavBar();
+  final int currentIndex;
+  final Function(int) onTap;
+
+  const _HomeBottomNavBar({required this.currentIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
-      currentIndex: 0,
+      currentIndex: currentIndex,
       type: BottomNavigationBarType.fixed,
       selectedItemColor: const Color(0xFF5FA9BB),
       unselectedItemColor: Colors.grey,
-      selectedFontSize: 11,
-      unselectedFontSize: 11,
-      onTap: (index) {
-        if (index == 1) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MapPage()),
-          );
-        } else if (index == 2) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ChatBotPage()),
-          );
-        } else if (index == 3) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const NotificationsPage()),
-          );
-        } else if (index == 4) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ProfilePage()),
-          );
-        }
-      },
+      onTap: onTap,
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),
@@ -910,20 +919,81 @@ class _HomeBottomNavBar extends StatelessWidget {
   }
 }
 
-class _OffersList extends StatelessWidget {
+class _OffersList extends StatefulWidget {
   const _OffersList();
 
   @override
+  State<_OffersList> createState() => _OffersListState();
+}
+
+class _OffersListState extends State<_OffersList> {
+  List offers = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchOffers();
+  }
+
+  Future<void> fetchOffers() async {
+    try {
+      final sessionId = SessionStore.current?.sessionId ?? "";
+      final data = await OffersService.getOffers(sessionId);
+
+      setState(() {
+        offers = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("OFFERS ERROR = $e");
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const SizedBox(
+        height: 120,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (offers.isEmpty) {
+      return const Text("No offers available");
+    }
+
     return SizedBox(
       height: 120,
-      child: ListView(
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        children: const [
-          _AnnouncementsList(),
-          SizedBox(width: 10),
-          _AnnouncementsList(),
-        ],
+        itemCount: offers.length,
+        itemBuilder: (context, index) {
+          final offer = offers[index];
+
+          return Container(
+            width: 250,
+            margin: const EdgeInsets.only(right: 10),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              border: Border.all(color: Color(0xFF6DAAB4)),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(offer['title'] ?? '', textAlign: TextAlign.center),
+                const SizedBox(height: 6),
+                Text(
+                  offer['description'] ?? '',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -999,10 +1069,13 @@ class _HorizontalCouponsState extends State<_HorizontalCoupons> {
 
   Future<void> fetchCoupons() async {
     try {
-      final couponsData = await ApiService.getCoupons();
+      final results = await Future.wait([
+        ApiService.getCoupons(),
+        ApiService.getUserCoupons(),
+      ]);
 
-      // 🔥 get user redeemed coupons
-      final userCoupons = await ApiService.getUserCoupons();
+      final couponsData = results[0];
+      final userCoupons = results[1];
 
       final redeemedIds = userCoupons.map((e) => e['couponId']).toSet();
 
@@ -1023,9 +1096,58 @@ class _HorizontalCouponsState extends State<_HorizontalCoupons> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const SizedBox(
-        height: 98,
-        child: Center(child: CircularProgressIndicator()),
+      return SizedBox(
+        height: 120,
+        child: isLoading
+            ? ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: const [
+                  SizedBox(width: 160, child: Card()),
+                  SizedBox(width: 12),
+                  SizedBox(width: 160, child: Card()),
+                  SizedBox(width: 12),
+                  SizedBox(width: 160, child: Card()),
+                ],
+              )
+            : ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: coupons.length,
+                itemBuilder: (context, index) {
+                  final item = coupons[index];
+
+                  return Container(
+                    width: 160,
+                    margin: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4D7E8A),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          item['type'] ?? '',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          item['discription'] ?? '',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
       );
     }
 

@@ -13,7 +13,7 @@ class ReceiptPage extends StatefulWidget {
 class _ReceiptPageState extends State<ReceiptPage> {
   static const Color tealDark = Color(0xFF2B6E7F);
   static const Color tealMid = Color(0xFF5FA9BB);
-  static const Color tealLight = Color(0xFFDFF4F8);
+  //static const Color tealLight = Color(0xFFDFF4F8);
 
   Map<String, dynamic>? receipt;
   bool isLoading = true;
