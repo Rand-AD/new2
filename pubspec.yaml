@@ -31,12 +31,16 @@ flutter:
     - assets/images/splash.png
     - assets/images/star(1).png
     - assets/images/bag.png
+    - assets/images/gift1.png
     - assets/images/discount.png
     - assets/images/coupon.png
     - assets/images/logout.png
     - assets/images/qr.png
     - assets/images/max_logo.jpeg
     - assets/images/subway_logo.png
+    - assets/images/coin.png
+    - assets/images/mall.jpg
+    - assets/images/logo3.png
     - assets/maps/
   fonts:
     - family: Judson

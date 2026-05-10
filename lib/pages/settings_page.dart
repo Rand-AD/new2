@@ -55,6 +55,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
             ),
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
@@ -70,6 +71,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                     ),
                     const SizedBox(height: 10),
+
                     _settingsTile(
                       icon: Icons.person_outline,
                       title: 'Account',
@@ -80,15 +82,26 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       onTap: () {},
                     ),
+
                     _settingsTile(
                       icon: Icons.notifications_none,
                       title: 'Notification',
                       trailing: Switch(
                         value: notificationsEnabled,
-                        activeThumbColor: Colors.white,
-                        activeTrackColor: tealHeader,
-                        inactiveThumbColor: Colors.white,
-                        inactiveTrackColor: Colors.grey.shade300,
+
+                        // ✅ الجديد بدل activeThumbColor
+                        thumbColor: WidgetStateProperty.resolveWith((states) {
+                          return Colors.white;
+                        }),
+
+                        // ✅ الجديد بدل activeTrackColor
+                        trackColor: WidgetStateProperty.resolveWith((states) {
+                          if (states.contains(WidgetState.selected)) {
+                            return tealHeader;
+                          }
+                          return Colors.grey.shade300;
+                        }),
+
                         onChanged: (value) {
                           setState(() {
                             notificationsEnabled = value;
@@ -101,6 +114,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         });
                       },
                     ),
+
                     _settingsTile(
                       icon: Icons.language,
                       title: 'Language',
@@ -113,6 +127,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       onTap: () {},
                     ),
+
                     _settingsTile(
                       icon: Icons.favorite_border,
                       title: 'Intrests',
@@ -123,17 +138,21 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       onTap: () {},
                     ),
+
                     _settingsTile(
                       icon: Icons.delete_outline,
                       title: 'Delete Account',
                       onTap: () {},
                     ),
+
                     _settingsTile(
                       icon: Icons.logout,
                       title: 'Logout',
                       onTap: () {},
                     ),
+
                     const SizedBox(height: 26),
+
                     const Text(
                       'FEEDBACK',
                       style: TextStyle(
@@ -143,16 +162,19 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                     ),
                     const SizedBox(height: 10),
+
                     _settingsTile(
                       icon: Icons.warning_amber_outlined,
                       title: 'Report a Bug',
                       onTap: () {},
                     ),
+
                     _settingsTile(
                       icon: Icons.send_outlined,
                       title: 'Send Feedback',
                       onTap: () {},
                     ),
+
                     _settingsTile(
                       icon: Icons.help_outline,
                       title: 'Help',
