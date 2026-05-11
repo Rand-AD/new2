@@ -32,8 +32,71 @@ class _ReceiptPageState extends State<ReceiptPage> {
         isLoading = false;
       });
     } catch (e) {
-      print(e);
+      debugPrint("RECEIPT ERROR = $e");
+      setState(() => isLoading = false);
     }
+  }
+
+  num _numberValue(dynamic value) {
+    if (value is num) {
+      return value;
+    }
+
+    return num.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  String _stringValue(dynamic value, String fallback) {
+    final text = value?.toString().trim() ?? '';
+    return text.isEmpty ? fallback : text;
+  }
+
+  String _capitalizeWords(dynamic value) {
+    final text = _stringValue(value, 'Store').toLowerCase();
+
+    return text
+        .split(RegExp(r'\s+'))
+        .map((word) {
+          if (word.isEmpty) {
+            return word;
+          }
+
+          return '${word[0].toUpperCase()}${word.substring(1)}';
+        })
+        .join(' ');
+  }
+
+  String _formatNumber(dynamic value, {int decimals = 0}) {
+    final number = _numberValue(value);
+    final fixed = number.toStringAsFixed(decimals);
+    final parts = fixed.split('.');
+    final whole = parts.first;
+    final sign = whole.startsWith('-') ? '-' : '';
+    final digits = sign.isEmpty ? whole : whole.substring(1);
+    final buffer = StringBuffer();
+
+    for (var i = 0; i < digits.length; i++) {
+      final remaining = digits.length - i;
+      buffer.write(digits[i]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write(',');
+      }
+    }
+
+    final formattedWhole = '$sign$buffer';
+    if (decimals == 0) {
+      return formattedWhole;
+    }
+
+    return '$formattedWhole.${parts[1]}';
+  }
+
+  String _formatDate(dynamic value) {
+    final raw = value?.toString() ?? '';
+    if (raw.length >= 10) {
+      return raw.substring(0, 10);
+    }
+
+    return raw;
   }
 
   @override
@@ -42,11 +105,14 @@ class _ReceiptPageState extends State<ReceiptPage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final store = receipt?['storeName'] ?? '';
+    final store = _capitalizeWords(receipt?['storeName']);
     final price = receipt?['price'] ?? 0;
     final points = receipt?['pointsEarned'] ?? 0;
     final date = receipt?['createdAt'] ?? '';
-    final status = receipt?['status'] ?? 'completed';
+    final status = _stringValue(receipt?['status'], 'completed');
+    final priceText = '${_formatNumber(price, decimals: 2)} JOD';
+    final pointsText = '${_formatNumber(points)} pts';
+    final dateText = _formatDate(date);
 
     return Scaffold(
       body: Container(
@@ -129,9 +195,9 @@ class _ReceiptPageState extends State<ReceiptPage> {
 
                       const SizedBox(height: 10),
 
-                      _row("Price", "$price JOD"),
-                      _row("Points", "$points pts"),
-                      _row("Date", date.substring(0, 10)),
+                      _row("Price", priceText),
+                      _row("Points", pointsText),
+                      _row("Date", dateText),
 
                       const SizedBox(height: 20),
 

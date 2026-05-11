@@ -28,7 +28,20 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final data = jsonDecode(response.body);
+
+      if (data is List) {
+        return data;
+      }
+
+      if (data is Map<String, dynamic>) {
+        final nested =
+            data['items'] ?? data['data'] ?? data['coupons'] ?? data['results'];
+
+        if (nested is List) {
+          return nested;
+        }
+      }
     }
 
     return [];

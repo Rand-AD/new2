@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/session_store.dart';
+import '../widgets/rewards_header.dart';
 import 'history_page.dart';
 import 'my_coupons_page.dart';
 
@@ -93,16 +94,13 @@ class _CouponPageState extends State<CouponPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final myCoupons = await getMyCouponsIds();
 
         if (!mounted) {
           return;
         }
 
         setState(() {
-          coupons = data
-              .where((c) => !myCoupons.contains(c['id'].toString()))
-              .toList();
+          coupons = data is List ? data : [];
           isLoading = false;
         });
       } else {
@@ -112,22 +110,6 @@ class _CouponPageState extends State<CouponPage> {
       debugPrint("COUPONS ERROR = $e");
       setState(() => isLoading = false);
     }
-  }
-
-  Future<List<String>> getMyCouponsIds() async {
-    final sessionId = SessionStore.current?.sessionId;
-
-    final response = await http.get(
-      Uri.parse("$baseUrl/api/Coupons/user"),
-      headers: {"X-Session-Id": sessionId ?? ""},
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return data.map<String>((e) => e['couponId'].toString()).toList();
-    }
-
-    return [];
   }
 
   void _openTab(int index) {
@@ -148,7 +130,7 @@ class _CouponPageState extends State<CouponPage> {
       backgroundColor: const Color(0xFFF7F7F7),
       body: Column(
         children: [
-          const _CouponsHeader(),
+          const RewardsHeader(),
           _CouponTabs(onTap: _openTab),
           Expanded(
             child: isLoading
@@ -163,66 +145,13 @@ class _CouponPageState extends State<CouponPage> {
 
                       return _CouponCard(
                         coupon: item,
-                        onRedeem: () => redeemCoupon(
-                          item['id'].toString(),
-                          index,
-                        ),
+                        onRedeem: () =>
+                            redeemCoupon(item['id'].toString(), index),
                       );
                     },
                   ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CouponsHeader extends StatelessWidget {
-  const _CouponsHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 140,
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: Color(0xFF51A2B4),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(58),
-          bottomRight: Radius.circular(58),
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            Positioned(
-              left: 18,
-              top: 16,
-              child: IconButton(
-                onPressed: () => Navigator.maybePop(context),
-                icon: const Icon(
-                  Icons.arrow_back_ios_new,
-                  color: Colors.white,
-                  size: 25,
-                ),
-              ),
-            ),
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.only(top: 18),
-                child: Text(
-                  'Coupons',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 25,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -235,7 +164,7 @@ class _CouponTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const tabs = ['Get rewards', 'My rewards', 'History'];
+    const tabs = ['All rewards', 'My rewards', 'History'];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(30, 10, 30, 12),
@@ -391,22 +320,7 @@ class _CouponCard extends StatelessWidget {
   Future<void> _confirmRedeem(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Redeem Coupon"),
-          content: const Text("Are you sure you want to redeem this coupon?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Redeem"),
-            ),
-          ],
-        );
-      },
+      builder: (context) => const _RedeemConfirmDialog(),
     );
 
     if (confirm == true) {
@@ -468,8 +382,8 @@ class _CouponCard extends StatelessWidget {
                     Positioned(
                       left: 24,
                       right: 104,
-                      top: 26,
-                      bottom: 16,
+                      top: 18,
+                      bottom: 24,
                       child: Center(
                         child: Text(
                           description,
@@ -486,8 +400,8 @@ class _CouponCard extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      right: 0,
-                      bottom: 0,
+                      right: -10,
+                      bottom: -8,
                       child: Image.asset(
                         'assets/images/gift1.png',
                         width: 92,
@@ -501,7 +415,7 @@ class _CouponCard extends StatelessWidget {
             ),
             Positioned(
               left: 18,
-              bottom: 58,
+              bottom: 46,
               child: CircleAvatar(
                 radius: 26,
                 backgroundColor: Colors.white,
@@ -511,10 +425,8 @@ class _CouponCard extends StatelessWidget {
                     width: 46,
                     height: 46,
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.store,
-                      color: teal,
-                    ),
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.store, color: teal),
                   ),
                 ),
               ),
@@ -565,10 +477,7 @@ class _CouponCard extends StatelessWidget {
                   ),
                   child: const Text(
                     'Redeem',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -601,6 +510,108 @@ class _CouponCard extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RedeemConfirmDialog extends StatelessWidget {
+  const _RedeemConfirmDialog();
+
+  static const Color teal = Color(0xFF2B6E7F);
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Container(
+        width: 318,
+        height: 202,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: teal, width: 4),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: 2,
+              right: 2,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context, false),
+                icon: Icon(Icons.close, color: Colors.grey.shade700, size: 28),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 42, 24, 22),
+              child: Column(
+                children: [
+                  const Text(
+                    'Redeem this reward?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: teal,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'This coupon will be added to My rewards.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: teal,
+                            side: const BorderSide(color: teal, width: 1.5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: teal,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'Redeem',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],

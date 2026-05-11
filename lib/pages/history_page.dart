@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+
 import '../Services/api_service.dart';
-import 'receipt_page.dart';
+import '../core/coupon_status.dart';
+import '../widgets/reward_coupon_card.dart';
+import '../widgets/rewards_header.dart';
+import 'coupon_page.dart';
+import 'home_page.dart';
+import 'my_coupons_page.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -10,251 +16,191 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  static const Color tealDark = Color(0xFF2B6E7F);
-  static const Color tealMid = Color(0xFF5FA9BB);
-  static const Color pageBg = Color(0xFFF6F6F6);
+  static const Color pageBg = Color(0xFFF7F7F7);
 
-  String selectedFilter = 'All';
-
-  List<dynamic> transactions = [];
+  List<Map<String, dynamic>> historyCoupons = [];
   bool isLoading = true;
-
-  List<dynamic> get filteredTransactions {
-    if (selectedFilter == 'All') return transactions;
-
-    if (selectedFilter == 'Earned') {
-      return transactions.where((t) => (t['pointsEarned'] ?? 0) > 0).toList();
-    }
-
-    if (selectedFilter == 'Redeemed') {
-      return transactions.where((t) => (t['pointsEarned'] ?? 0) <= 0).toList();
-    }
-
-    return transactions;
-  }
 
   @override
   void initState() {
     super.initState();
-    fetchTransactions();
+    getHistoryCoupons();
   }
 
-  Future<void> fetchTransactions() async {
+  Future<void> getHistoryCoupons() async {
     try {
-      final data = await ApiService.getMyReceipts();
+      final data = await ApiService.getUserCoupons();
+      final coupons = CouponStatus.uniqueInstances(
+        data,
+      ).where(CouponStatus.belongsInHistory).toList();
+
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
-        transactions = data['items']; // 🔥 important
+        historyCoupons = coupons;
         isLoading = false;
       });
     } catch (e) {
-      print("ERROR = $e");
+      debugPrint('COUPON HISTORY ERROR = $e');
+      if (!mounted) {
+        return;
+      }
+
       setState(() => isLoading = false);
     }
+  }
+
+  void _openTab(int index) {
+    if (index == 2) {
+      return;
+    }
+
+    final Widget page = index == 0 ? const CouponPage() : const MyCouponsPage();
+
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => page));
+  }
+
+  void _openBottomTab(int index) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => HomePage(initialIndex: index)),
+      (route) => false,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: pageBg,
-      appBar: AppBar(
-        backgroundColor: tealMid,
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          'Transaction History',
-          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
+      bottomNavigationBar: _HistoryBottomNavBar(onTap: _openBottomTab),
       body: Column(
         children: [
-          Container(
-            color: tealMid,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-            child: Row(
-              children: [
-                _buildFilterChip('All'),
-                const SizedBox(width: 8),
-                _buildFilterChip('Earned'),
-                const SizedBox(width: 8),
-                _buildFilterChip('Redeemed'),
-              ],
-            ),
-          ),
+          const RewardsHeader(),
+          _RewardTabs(selectedIndex: 2, onTap: _openTab),
           Expanded(
-            child: filteredTransactions.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No transactions found',
-                      style: TextStyle(fontSize: 16),
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : historyCoupons.isEmpty
+                ? const Center(child: Text('No history yet'))
+                : RefreshIndicator(
+                    onRefresh: getHistoryCoupons,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
+                      itemCount: historyCoupons.length,
+                      itemBuilder: (context, index) {
+                        final item = historyCoupons[index];
+                        final status = CouponStatus.statusLabel(
+                          item,
+                        ).toUpperCase();
+
+                        return RewardCouponCard(
+                          coupon: item,
+                          isFaded: status == 'EXPIRED',
+                          statusLabel: status,
+                        );
+                      },
                     ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredTransactions.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final item = filteredTransactions[index];
-                      final points = item['pointsEarned'] ?? 0;
-                      final isPositive = points > 0;
-                      final storeName = item['storeName'] ?? 'Store';
-                      final date = item['createdAt'] ?? '';
-                      final status = item['status'] ?? 'completed';
-
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ReceiptPage(
-                                transactionId: item['transactionId'],
-                              ),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 8,
-                                offset: Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  color: tealMid.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.receipt_long,
-                                  color: tealDark,
-                                  size: 26,
-                                ),
-                              ),
-
-                              const SizedBox(width: 12),
-
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      storeName,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      isPositive ? "Earned" : "Redeemed",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      date.isNotEmpty
-                                          ? date.substring(0, 10)
-                                          : '',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    '${isPositive ? '+' : ''}$points pts',
-                                    style: TextStyle(
-                                      color: isPositive
-                                          ? Colors.green
-                                          : Colors.redAccent,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: status == 'completed'
-                                          ? Colors.green.withOpacity(0.12)
-                                          : Colors.orange.withOpacity(0.12),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      status,
-                                      style: TextStyle(
-                                        color: status == 'completed'
-                                            ? Colors.green
-                                            : Colors.orange,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
                   ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildFilterChip(String label) {
-    final bool isSelected = selectedFilter == label;
+class _RewardTabs extends StatelessWidget {
+  const _RewardTabs({required this.selectedIndex, required this.onTap});
 
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            selectedFilter = label;
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.25),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? tealDark : Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
+  final int selectedIndex;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const tabs = ['All rewards', 'My rewards', 'History'];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 10, 28, 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(tabs.length, (index) {
+          final selected = selectedIndex == index;
+
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onTap(index),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? const Color(0xFFE2E2E2)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  tabs[index],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        }),
       ),
+    );
+  }
+}
+
+class _HistoryBottomNavBar extends StatelessWidget {
+  const _HistoryBottomNavBar({required this.onTap});
+
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      currentIndex: 0,
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: Colors.grey,
+      unselectedItemColor: Colors.grey,
+      selectedFontSize: 10,
+      unselectedFontSize: 10,
+      onTap: onTap,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home_outlined),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.map_outlined),
+          activeIcon: Icon(Icons.map_outlined),
+          label: 'Map',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.chat_bubble_outline),
+          activeIcon: Icon(Icons.chat_bubble_outline),
+          label: 'Chatbot',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.notifications_none),
+          activeIcon: Icon(Icons.notifications_none),
+          label: 'Notifications',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline),
+          activeIcon: Icon(Icons.person_outline),
+          label: 'Profile',
+        ),
+      ],
     );
   }
 }

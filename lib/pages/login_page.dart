@@ -115,14 +115,14 @@ class _LoginPageState extends State<LoginPage> {
 
       if (!mounted) return;
 
-      Future.microtask(() {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomePage()),
-        );
-      });
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomePage(initialIndex: 0)),
+      );
     } on DioException catch (e) {
       final extracted = _extractApiMessage(e.response?.data);
+
+      if (!mounted) return;
 
       if (extracted.isApiError && extracted.message.isNotEmpty) {
         await ErrorPopup.show(context, message: extracted.message);
@@ -135,6 +135,8 @@ class _LoginPageState extends State<LoginPage> {
         await ErrorPopup.show(context, message: fallback);
       }
     } catch (e) {
+      if (!mounted) return;
+
       await ErrorPopup.show(context, message: "Login failed: $e");
     } finally {
       if (mounted) setState(() => _loading = false);

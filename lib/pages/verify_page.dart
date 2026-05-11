@@ -174,7 +174,8 @@ class VerifyPage extends StatelessWidget {
                               Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const HomePage(),
+                                  builder: (_) =>
+                                      const HomePage(initialIndex: 0),
                                 ),
                                 (route) => false,
                               );

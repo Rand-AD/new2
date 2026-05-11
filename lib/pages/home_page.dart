@@ -4,7 +4,6 @@ import 'package:g_project/Services/api_service.dart';
 import 'package:g_project/pages/login_page.dart';
 
 import '../core/session_store.dart';
-import 'history_page.dart';
 import 'profile_page.dart';
 import 'notifications_page.dart';
 import 'chatbot_page.dart';
@@ -13,18 +12,27 @@ import 'settings_page.dart';
 import 'coupon_page.dart';
 import 'announcements_page.dart';
 import 'shops_page.dart';
+import 'transactions_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, this.initialIndex = 0});
+
+  final int initialIndex;
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  int _currentIndex = 0;
+  late int _currentIndex;
   static const Color tealDark = Color(0xFF2B6E7F);
   static const Color pageBg = Color(0xFFF6F6F6);
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
   String _formatPoints(int points) {
     final s = points.toString();
@@ -408,10 +416,10 @@ class _TopHomeSection extends StatelessWidget {
                             children: [
                               const Positioned(
                                 left: 22,
-                                top: 21,
+                                top: 19,
                                 child: SizedBox(
-                                  width: 127,
-                                  height: 18,
+                                  width: 170,
+                                  height: 22,
                                   child: Text(
                                     'LOYALTY CARD',
                                     maxLines: 1,
@@ -419,53 +427,60 @@ class _TopHomeSection extends StatelessWidget {
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontFamily: 'Judson',
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w400,
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700,
                                       height: 1,
                                     ),
                                   ),
                                 ),
                               ),
                               Positioned(
-                                left: 62,
-                                top: 34,
+                                left: 50,
+                                top: 28,
                                 right: 18,
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Image.asset(
                                       'assets/images/coin.png',
-                                      width: 100,
-                                      height: 100,
+                                      width: 120,
+                                      height: 120,
                                       fit: BoxFit.contain,
                                     ),
-                                    const SizedBox(width: 2),
                                     Flexible(
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        alignment: Alignment.centerLeft,
-                                        child: Text(
-                                          points,
-                                          maxLines: 1,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontFamily: 'K2D',
-                                            fontSize: 40,
-                                            fontWeight: FontWeight.w700,
-                                            height: 1,
+                                      child: Transform.translate(
+                                        offset: const Offset(-16, 0),
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.centerLeft,
+                                          child: Text(
+                                            points,
+                                            maxLines: 1,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontFamily: 'K2D',
+                                              fontSize: 46,
+                                              fontWeight: FontWeight.w800,
+                                              height: 1,
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 7),
-                                    const Text(
-                                      'points',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: 'K2D',
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w400,
-                                        height: 1,
+                                    Transform.translate(
+                                      offset: const Offset(-14, 0),
+                                      child: const Padding(
+                                        padding: EdgeInsets.only(left: 4),
+                                        child: Text(
+                                          'points',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontFamily: 'K2D',
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w400,
+                                            height: 1,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -477,20 +492,23 @@ class _TopHomeSection extends StatelessWidget {
                       ),
                       Positioned(
                         left: 0,
-                        top: 104,
+                        top: 106,
                         child: Container(
-                          width: 70,
-                          height: 70,
+                          width: 65,
+                          height: 65,
                           decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
                           ),
                           child: Center(
-                            child: Image.asset(
-                              'assets/images/logo3.png',
-                              width: 60,
-                              height: 60,
-                              fit: BoxFit.contain,
+                            child: Transform.translate(
+                              offset: const Offset(0, -2),
+                              child: Image.asset(
+                                'assets/images/logo3.png',
+                                width: 55,
+                                height: 55,
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                         ),
@@ -737,7 +755,12 @@ class _ShopsGridState extends State<_ShopsGrid> {
     final floorNumber = int.tryParse(text);
 
     if (floorNumber != null) {
-      const floors = ['Ground Floor', 'First Floor', 'Second Floor', 'Third Floor'];
+      const floors = [
+        'Ground Floor',
+        'First Floor',
+        'Second Floor',
+        'Third Floor',
+      ];
       if (floorNumber >= 0 && floorNumber < floors.length) {
         return floors[floorNumber];
       }
@@ -944,7 +967,7 @@ class _HomeDrawer extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const HistoryPage()),
+                MaterialPageRoute(builder: (_) => const TransactionsPage()),
               );
             },
           ),
@@ -1110,6 +1133,75 @@ class _HorizontalCouponsState extends State<_HorizontalCoupons> {
   List<dynamic> coupons = [];
   bool isLoading = true;
 
+  String _stringValue(dynamic coupon, List<String> keys, String fallback) {
+    if (coupon is! Map) {
+      return fallback;
+    }
+
+    for (final key in keys) {
+      final value = coupon[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString();
+      }
+    }
+
+    return fallback;
+  }
+
+  String _couponTitle(dynamic coupon) {
+    return _stringValue(coupon, ['title', 'type', 'couponType'], 'Coupon');
+  }
+
+  String _couponDescription(dynamic coupon) {
+    return _stringValue(
+      coupon,
+      ['description', 'discription', 'couponDescription'],
+      'No description available',
+    );
+  }
+
+  String _couponPoints(dynamic coupon) {
+    return '${_stringValue(coupon, ['costPoint', 'points'], '0')} pts';
+  }
+
+  void _showCouponDetails(BuildContext context, dynamic coupon) {
+    final title = _couponTitle(coupon);
+    final description = _couponDescription(coupon);
+    final points = _couponPoints(coupon);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(description),
+                const SizedBox(height: 14),
+                Text(
+                  points,
+                  style: const TextStyle(
+                    color: Color(0xFF2B6E7F),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1151,11 +1243,20 @@ class _HorizontalCouponsState extends State<_HorizontalCoupons> {
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           children: const [
-            SizedBox(width: 219, child: Card(margin: EdgeInsets.only(bottom: 8))),
+            SizedBox(
+              width: 219,
+              child: Card(margin: EdgeInsets.only(bottom: 8)),
+            ),
             SizedBox(width: 12),
-            SizedBox(width: 219, child: Card(margin: EdgeInsets.only(bottom: 8))),
+            SizedBox(
+              width: 219,
+              child: Card(margin: EdgeInsets.only(bottom: 8)),
+            ),
             SizedBox(width: 12),
-            SizedBox(width: 219, child: Card(margin: EdgeInsets.only(bottom: 8))),
+            SizedBox(
+              width: 219,
+              child: Card(margin: EdgeInsets.only(bottom: 8)),
+            ),
           ],
         ),
       );
@@ -1176,57 +1277,54 @@ class _HorizontalCouponsState extends State<_HorizontalCoupons> {
         itemCount: coupons.length,
         itemBuilder: (context, index) {
           final item = coupons[index];
+          final title = _couponTitle(item);
+          final points = _couponPoints(item);
 
-          return Container(
-            width: 219,
-            margin: const EdgeInsets.only(right: 12, bottom: 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4D7E8A),
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x40000000),
-                  blurRadius: 10,
-                  offset: Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  item['type'] ?? '',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+          return GestureDetector(
+            onTap: () => _showCouponDetails(context, item),
+            child: Container(
+              width: 219,
+              margin: const EdgeInsets.only(right: 12, bottom: 8),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4D7E8A),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x40000000),
+                    blurRadius: 10,
+                    offset: Offset(0, 6),
                   ),
-                ),
-
-                const SizedBox(height: 8),
-
-                Flexible(
-                  child: Text(
-                    item['discription'] ?? '',
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      height: 1.15,
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 8),
+                  const SizedBox(height: 12),
 
-                Text(
-                  "${item['costPoint'] ?? 0} pts",
-                  style: const TextStyle(
-                    color: Colors.yellow,
-                    fontWeight: FontWeight.bold,
+                  Text(
+                    points,
+                    style: const TextStyle(
+                      color: Colors.yellow,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
