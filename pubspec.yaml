@@ -15,6 +15,7 @@ dependencies:
   dio: ^5.4.0
   dio_cookie_manager: ^3.0.0
   cookie_jar: ^4.0.0
+  shared_preferences: ^2.3.3
 
 dev_dependencies:
   flutter_test:
@@ -32,6 +33,7 @@ flutter:
     - assets/images/star(1).png
     - assets/images/bag.png
     - assets/images/gift1.png
+    - assets/images/gift-voucher.png
     - assets/images/discount.png
     - assets/images/coupon.png
     - assets/images/logout.png

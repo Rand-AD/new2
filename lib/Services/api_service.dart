@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../core/session_store.dart';
 
@@ -61,14 +62,44 @@ class ApiService {
       headers: headers,
     );
 
-    print("ANNOUNCEMENTS STATUS = ${response.statusCode}");
-    print("ANNOUNCEMENTS BODY = ${response.body}");
+    debugPrint("ANNOUNCEMENTS STATUS = ${response.statusCode}");
+    debugPrint("ANNOUNCEMENTS BODY = ${response.body}");
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
       throw Exception(response.body);
     }
+  }
+
+  // ================= GET NOTIFICATIONS =================
+  static Future<List<dynamic>> getNotifications() async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/Notifications"),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      if (data is List) {
+        return data;
+      }
+
+      if (data is Map<String, dynamic>) {
+        final nested =
+            data['items'] ??
+            data['data'] ??
+            data['notifications'] ??
+            data['results'];
+
+        if (nested is List) {
+          return nested;
+        }
+      }
+    }
+
+    throw Exception(response.body);
   }
 
   static Future<Map<String, dynamic>> getTransaction(int id) async {
@@ -96,6 +127,7 @@ class ApiService {
       throw Exception(response.body);
     }
   }
+
   // ================= GET COUPONS =================
   static Future<List<dynamic>> getCoupons() async {
     try {
@@ -115,7 +147,7 @@ class ApiService {
 
       throw Exception("Failed to load coupons");
     } catch (e) {
-      print("COUPONS ERROR = $e");
+      debugPrint("COUPONS ERROR = $e");
       return [];
     }
   }

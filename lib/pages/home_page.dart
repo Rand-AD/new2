@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:g_project/Services/api_service.dart';
+import 'package:g_project/Services/offers_service.dart';
 import 'package:g_project/pages/login_page.dart';
 
 import '../core/session_store.dart';
@@ -10,7 +11,8 @@ import 'chatbot_page.dart';
 import 'map_page.dart';
 import 'settings_page.dart';
 import 'coupon_page.dart';
-import 'announcements_page.dart';
+import 'offers_page.dart';
+import 'shop_details_page.dart';
 import 'shops_page.dart';
 import 'transactions_page.dart';
 
@@ -103,16 +105,13 @@ class _HomePageState extends State<HomePage> {
             onViewAll: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AnnouncementsPage()),
+                MaterialPageRoute(builder: (_) => const OffersPage()),
               );
             },
           ),
 
           const SizedBox(height: 10),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: _AnnouncementsList(),
-          ),
+          const _AnnouncementsList(),
 
           const SizedBox(height: 16),
 
@@ -157,10 +156,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _showLogoutDialog(BuildContext context) async {
+    final pageNavigator = Navigator.of(context);
+
     await showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (context) {
+      builder: (dialogContext) {
         return Center(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 28),
@@ -197,7 +198,7 @@ class _HomePageState extends State<HomePage> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.pop(dialogContext),
                         child: const Text(
                           "NO",
                           style: TextStyle(
@@ -209,11 +210,13 @@ class _HomePageState extends State<HomePage> {
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          SessionStore.current = null;
-                          Navigator.pushAndRemoveUntil(
-                            context,
+                        onPressed: () async {
+                          Navigator.pop(dialogContext);
+                          await SessionStore.clear();
+
+                          if (!mounted) return;
+
+                          pageNavigator.pushAndRemoveUntil(
                             MaterialPageRoute(
                               builder: (_) => const LoginPage(),
                             ),
@@ -614,26 +617,106 @@ class _HorizontalCoupons extends StatefulWidget {
 class _AnnouncementCard extends StatelessWidget {
   final String title;
   final String content;
+  final String date;
 
-  const _AnnouncementCard({required this.title, required this.content});
+  const _AnnouncementCard({
+    required this.title,
+    required this.content,
+    this.date = '',
+  });
 
   void _showDetails(BuildContext context) {
     showDialog(
       context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.08),
       builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: SingleChildScrollView(
-            child: Text(
-              content.trim().isEmpty ? 'No details available' : content,
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: 266,
+              constraints: const BoxConstraints(minHeight: 173),
+              padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(color: const Color(0xFF1D5D6D), width: 2.4),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x24000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          content.trim().isEmpty
+                              ? 'No details available'
+                              : content,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF777777),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            height: 1.16,
+                          ),
+                        ),
+                        if (date.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          Text(
+                            date,
+                            style: const TextStyle(
+                              color: Color(0xFF2B6E7F),
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              height: 1,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    right: -8,
+                    top: -10,
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                      iconSize: 22,
+                      color: Color(0xFF777777),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      tooltip: 'Close',
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
         );
       },
     );
@@ -673,7 +756,7 @@ class _AnnouncementCard extends StatelessWidget {
             Positioned(
               left: 18,
               right: 18,
-              top: 58,
+              top: 56,
               child: Text(
                 title,
                 maxLines: 2,
@@ -686,10 +769,96 @@ class _AnnouncementCard extends StatelessWidget {
                 ),
               ),
             ),
+            if (date.isNotEmpty)
+              Positioned(
+                right: 12,
+                bottom: 9,
+                child: Text(
+                  date,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF6A8D95),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
+  }
+}
+
+class _OfferAnnouncementItem {
+  const _OfferAnnouncementItem({
+    required this.title,
+    required this.content,
+    required this.date,
+  });
+
+  factory _OfferAnnouncementItem.fromOffer(Map<dynamic, dynamic> json) {
+    return _OfferAnnouncementItem(
+      title: _stringValue(json, ['title', 'name'], 'Offer'),
+      content: _stringValue(json, [
+        'description',
+        'content',
+        'message',
+        'body',
+      ], 'No details available'),
+      date: _dateValue(json, ['startAt', 'start_at', 'madeAt', 'made_at']),
+    );
+  }
+
+  factory _OfferAnnouncementItem.fromAnnouncement(Map<dynamic, dynamic> json) {
+    return _OfferAnnouncementItem(
+      title: _stringValue(json, ['title', 'name'], 'Announcement'),
+      content: _stringValue(json, [
+        'content',
+        'description',
+        'message',
+        'body',
+      ], 'No details available'),
+      date: _dateValue(json, ['createdAt', 'created_at', 'date', 'madeAt']),
+    );
+  }
+
+  final String title;
+  final String content;
+  final String date;
+
+  static String _stringValue(
+    Map<dynamic, dynamic> json,
+    List<String> keys,
+    String fallback,
+  ) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString().trim();
+      }
+    }
+
+    return fallback;
+  }
+
+  static String _dateValue(Map<dynamic, dynamic> json, List<String> keys) {
+    final raw = _stringValue(json, keys, '');
+    if (raw.isEmpty) {
+      return '';
+    }
+
+    final parsed = DateTime.tryParse(raw);
+    if (parsed != null) {
+      return '${parsed.year}/${parsed.month}/${parsed.day}';
+    }
+
+    if (raw.length >= 10) {
+      return raw.substring(0, 10).replaceAll('-', '/');
+    }
+
+    return raw;
   }
 }
 
@@ -713,7 +882,9 @@ class _ShopsGridState extends State<_ShopsGrid> {
   Future<void> fetchStores() async {
     try {
       final data = await ApiService.getStores();
-      final sortedStores = List<dynamic>.from(data);
+      final sortedStores = List<dynamic>.from(
+        data.where((store) => _hasStoreImage(store) && !_isE2eStore(store)),
+      );
       sortedStores.sort((a, b) {
         final aPriority = _isAlameedStore(a) ? 0 : 1;
         final bPriority = _isAlameedStore(b) ? 0 : 1;
@@ -730,6 +901,16 @@ class _ShopsGridState extends State<_ShopsGrid> {
     }
   }
 
+  bool _isE2eStore(dynamic store) {
+    final name = (store['name'] ?? '').toString().trim().toLowerCase();
+    return name == 'e2e';
+  }
+
+  bool _hasStoreImage(dynamic store) {
+    return store['storeImageUrl'] != null &&
+        store['storeImageUrl'].toString().isNotEmpty;
+  }
+
   bool _isAlameedStore(dynamic store) {
     final name = (store['name'] ?? '').toString().toLowerCase();
     final image = (store['storeImageUrl'] ?? '').toString().toLowerCase();
@@ -740,8 +921,43 @@ class _ShopsGridState extends State<_ShopsGrid> {
         searchable.contains('\u0627\u0644\u0639\u0645\u064a\u062f');
   }
 
+  void _openStoreDetails(dynamic store) {
+    if (store is! Map) {
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            ShopDetailsPage(store: Map<String, dynamic>.from(store)),
+      ),
+    );
+  }
+
+  String _displayStoreName(dynamic value) {
+    final text = value?.toString().trim() ?? '';
+
+    if (text.isEmpty) {
+      return 'Shop';
+    }
+
+    return text
+        .split(RegExp(r'\s+'))
+        .map((word) {
+          if (word.isEmpty) {
+            return word;
+          }
+
+          return '${word[0].toUpperCase()}${word.substring(1)}';
+        })
+        .join(' ');
+  }
+
   String _floorLabel(dynamic store) {
     final value =
+        store['floorNumber'] ??
+        store['floor_number'] ??
         store['floorName'] ??
         store['floor'] ??
         store['storeFloor'] ??
@@ -792,75 +1008,98 @@ class _ShopsGridState extends State<_ShopsGrid> {
         height: 184,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: stores.length,
           itemBuilder: (context, index) {
             final store = stores[index];
             final imageUrl = (store['storeImageUrl'] ?? '').toString();
 
-            return Container(
-              width: 168,
-              height: 172,
-              margin: const EdgeInsets.only(right: 10, bottom: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(7),
-                border: Border.all(color: const Color(0xFF6DAAB4), width: 1.4),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x30000000),
-                    blurRadius: 8,
-                    offset: Offset(0, 5),
+            return InkWell(
+              borderRadius: BorderRadius.circular(7),
+              onTap: () => _openStoreDetails(store),
+              child: Container(
+                width: 168,
+                height: 172,
+                margin: const EdgeInsets.only(right: 10, bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(7),
+                  border: Border.all(
+                    color: const Color(0xFF6DAAB4),
+                    width: 1.8,
                   ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: 12,
-                    right: 12,
-                    top: 12,
-                    child: SizedBox(
-                      height: 86,
-                      child: imageUrl.isNotEmpty
-                          ? Image.network(
-                              imageUrl,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.store, size: 78),
-                            )
-                          : const Icon(Icons.store, size: 78),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x30000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 5),
                     ),
-                  ),
-                  Positioned(
-                    left: 10,
-                    right: 10,
-                    bottom: 31,
-                    child: Text(
-                      _floorLabel(store),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF67B4C3),
-                        fontSize: 21,
-                        fontWeight: FontWeight.w800,
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: 12,
+                      right: 12,
+                      top: 12,
+                      child: SizedBox(
+                        height: 82,
+                        child: imageUrl.isNotEmpty
+                            ? Image.network(
+                                imageUrl,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) =>
+                                    const Icon(Icons.store, size: 74),
+                              )
+                            : const Icon(Icons.store, size: 74),
                       ),
                     ),
-                  ),
-                  const Positioned(
-                    right: 8,
-                    bottom: 7,
-                    child: Text(
-                      'more details',
-                      style: TextStyle(
-                        color: Color(0xFF777777),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                    Positioned(
+                      left: 10,
+                      right: 10,
+                      bottom: 38,
+                      child: Text(
+                        _displayStoreName(store['name']),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFF4D7E8A),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    Positioned(
+                      left: 10,
+                      right: 10,
+                      bottom: 21,
+                      child: Text(
+                        _floorLabel(store),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFF67B4C3),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const Positioned(
+                      right: 8,
+                      bottom: 7,
+                      child: Text(
+                        'more details',
+                        style: TextStyle(
+                          color: Color(0xFF777777),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -1076,7 +1315,7 @@ class _AnnouncementsList extends StatefulWidget {
 }
 
 class _AnnouncementsListState extends State<_AnnouncementsList> {
-  List<dynamic> announcements = [];
+  List<_OfferAnnouncementItem> items = [];
   bool isLoading = true;
 
   @override
@@ -1087,9 +1326,21 @@ class _AnnouncementsListState extends State<_AnnouncementsList> {
 
   Future<void> fetchAnnouncements() async {
     try {
-      final data = await ApiService.getAnnouncements();
+      final sessionId = SessionStore.current?.sessionId ?? '';
+      final results = await Future.wait([
+        OffersService.getOffers(sessionId),
+        ApiService.getAnnouncements(),
+      ]);
+
+      final offers = results[0].whereType<Map>().map(
+        (item) => _OfferAnnouncementItem.fromOffer(item),
+      );
+      final announcements = results[1].whereType<Map>().map(
+        (item) => _OfferAnnouncementItem.fromAnnouncement(item),
+      );
+
       setState(() {
-        announcements = data;
+        items = [...offers, ...announcements];
         isLoading = false;
       });
     } catch (e) {
@@ -1104,24 +1355,26 @@ class _AnnouncementsListState extends State<_AnnouncementsList> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    if (items.isEmpty) {
+      return const SizedBox(
+        height: 98,
+        child: Center(child: Text("No offers or announcements")),
+      );
+    }
+
     return SizedBox(
       height: 146,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: announcements.length + 1,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: items.length,
         itemBuilder: (context, index) {
-          if (index == 0) {
-            return const _AnnouncementCard(
-              title: 'VAT-FREE Weekend!',
-              content: 'Valid across all stores.',
-            );
-          }
-
-          final item = announcements[index - 1];
+          final item = items[index];
 
           return _AnnouncementCard(
-            title: item['title'] ?? '',
-            content: item['content'] ?? '',
+            title: item.title,
+            content: item.content,
+            date: item.date,
           );
         },
       ),
@@ -1153,15 +1406,37 @@ class _HorizontalCouponsState extends State<_HorizontalCoupons> {
   }
 
   String _couponDescription(dynamic coupon) {
-    return _stringValue(
-      coupon,
-      ['description', 'discription', 'couponDescription'],
-      'No description available',
-    );
+    return _stringValue(coupon, [
+      'description',
+      'discription',
+      'couponDescription',
+    ], 'No description available');
   }
 
   String _couponPoints(dynamic coupon) {
-    return '${_stringValue(coupon, ['costPoint', 'points'], '0')} pts';
+    if (coupon is! Map) {
+      return '0 pts';
+    }
+
+    return '${_formatCouponNumber(coupon['costPoint'] ?? coupon['points'] ?? 0)} pts';
+  }
+
+  String _formatCouponNumber(dynamic value) {
+    final raw = value?.toString().trim() ?? '0';
+    final number = int.tryParse(raw) ?? 0;
+    final text = number.toString();
+    final buffer = StringBuffer();
+
+    for (var i = 0; i < text.length; i++) {
+      final remaining = text.length - i;
+      buffer.write(text[i]);
+
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write(',');
+      }
+    }
+
+    return buffer.toString();
   }
 
   void _showCouponDetails(BuildContext context, dynamic coupon) {
@@ -1171,32 +1446,91 @@ class _HorizontalCouponsState extends State<_HorizontalCoupons> {
 
     showDialog(
       context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.08),
       builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(description),
-                const SizedBox(height: 14),
-                Text(
-                  points,
-                  style: const TextStyle(
-                    color: Color(0xFF2B6E7F),
-                    fontWeight: FontWeight.w800,
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: 266,
+              constraints: const BoxConstraints(minHeight: 173),
+              padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(color: const Color(0xFF1D5D6D), width: 2.4),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x24000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
                   ),
-                ),
-              ],
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          description,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF777777),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            height: 1.16,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          points,
+                          style: const TextStyle(
+                            color: Color(0xFF2B6E7F),
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            height: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    right: -8,
+                    top: -10,
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                      iconSize: 22,
+                      color: Color(0xFF777777),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      tooltip: 'Close',
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
         );
       },
     );
@@ -1210,22 +1544,10 @@ class _HorizontalCouponsState extends State<_HorizontalCoupons> {
 
   Future<void> fetchCoupons() async {
     try {
-      final results = await Future.wait([
-        ApiService.getCoupons(),
-        ApiService.getUserCoupons(),
-      ]);
-
-      final couponsData = results[0];
-      final userCoupons = results[1];
-
-      final redeemedIds = userCoupons.map((e) => e['couponId']).toSet();
-
-      final filtered = couponsData
-          .where((c) => !redeemedIds.contains(c['id']))
-          .toList();
+      final couponsData = await ApiService.getCoupons();
 
       setState(() {
-        coupons = filtered;
+        coupons = couponsData;
         isLoading = false;
       });
     } catch (e) {
@@ -1285,9 +1607,8 @@ class _HorizontalCouponsState extends State<_HorizontalCoupons> {
             child: Container(
               width: 219,
               margin: const EdgeInsets.only(right: 12, bottom: 8),
-              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF4D7E8A),
+                color: const Color(0xFF1D5D6D),
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: const [
                   BoxShadow(
@@ -1297,30 +1618,51 @@ class _HorizontalCouponsState extends State<_HorizontalCoupons> {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Stack(
                 children: [
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      height: 1.15,
+                  Positioned(
+                    left: 8,
+                    bottom: 7,
+                    child: Image.asset(
+                      'assets/images/gift-voucher.png',
+                      width: 46,
+                      height: 46,
+                      fit: BoxFit.contain,
                     ),
                   ),
-
-                  const SizedBox(height: 12),
-
-                  Text(
-                    points,
-                    style: const TextStyle(
-                      color: Colors.yellow,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            title,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 22,
+                              height: 1.08,
+                            ),
+                          ),
+                          const SizedBox(height: 9),
+                          Text(
+                            points,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFFF5C95D),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 21,
+                              height: 1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

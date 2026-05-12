@@ -32,27 +32,40 @@ class UserSession {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      "name": name,
+      "phoneNumber": phoneNumber,
+      "totalPoints": totalPoints,
+      "sessionId": sessionId,
+      "message": message,
+      "userId": userId,
+      "role": role,
+    };
+  }
+
   static int _toInt(dynamic v) {
     if (v is int) return v;
     return int.tryParse((v ?? "0").toString()) ?? 0;
   }
+
   UserSession copyWith({
-  String? name,
-  String? phoneNumber,
-  int? totalPoints,
-  String? sessionId,
-  String? message,
-  String? userId,
-  String? role,
-}) {
-  return UserSession(
-    name: name ?? this.name,
-    phoneNumber: phoneNumber ?? this.phoneNumber,
-    totalPoints: totalPoints ?? this.totalPoints,
-    sessionId: sessionId ?? this.sessionId,
-    message: message ?? this.message,
-    userId: userId ?? this.userId,
-    role: role ?? this.role,
-  );
-}
+    String? name,
+    String? phoneNumber,
+    int? totalPoints,
+    String? sessionId,
+    String? message,
+    String? userId,
+    String? role,
+  }) {
+    return UserSession(
+      name: name ?? this.name,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      totalPoints: totalPoints ?? this.totalPoints,
+      sessionId: sessionId ?? this.sessionId,
+      message: message ?? this.message,
+      userId: userId ?? this.userId,
+      role: role ?? this.role,
+    );
+  }
 }

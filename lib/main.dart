@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:g_project/core/session_store.dart';
+import 'package:g_project/pages/home_page.dart';
 import 'package:g_project/pages/login_page.dart';
- 
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SessionStore.load();
   runApp(const MyApp());
 }
 
@@ -11,9 +14,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginPage(), // ✅ start directly from HomePage
+      home: SessionStore.current == null
+          ? const LoginPage()
+          : const HomePage(initialIndex: 0),
     );
   }
 }

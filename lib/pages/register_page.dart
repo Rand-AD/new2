@@ -108,12 +108,12 @@ class _RegisterPageState extends State<RegisterPage> {
 
     try {
       final UserSession session = await _auth.register(
-      name: name,
-      phoneNumber: phone,
-      password: pass,
-    );
+        name: name,
+        phoneNumber: phone,
+        password: pass,
+      );
 
-      SessionStore.current = session;
+      await SessionStore.save(session);
 
       if (!mounted) return;
 
@@ -123,6 +123,8 @@ class _RegisterPageState extends State<RegisterPage> {
       );
     } on DioException catch (e) {
       final extracted = _extractApiMessage(e.response?.data);
+
+      if (!mounted) return;
 
       if (extracted.isApiError && extracted.message.isNotEmpty) {
         await ErrorPopup.show(context, message: extracted.message);
@@ -135,6 +137,8 @@ class _RegisterPageState extends State<RegisterPage> {
         await ErrorPopup.show(context, message: fallback);
       }
     } catch (e) {
+      if (!mounted) return;
+
       await ErrorPopup.show(context, message: "Create failed: $e");
     } finally {
       if (mounted) setState(() => _loading = false);

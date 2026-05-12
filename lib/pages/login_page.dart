@@ -111,7 +111,7 @@ class _LoginPageState extends State<LoginPage> {
         password: pass,
       );
 
-      SessionStore.current = session;
+      await SessionStore.save(session);
 
       if (!mounted) return;
 
