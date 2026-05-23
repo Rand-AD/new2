@@ -79,6 +79,9 @@ class ApiService {
       headers: headers,
     );
 
+    debugPrint("NOTIFICATIONS STATUS = ${response.statusCode}");
+    debugPrint("NOTIFICATIONS BODY = ${response.body}");
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
 
@@ -96,7 +99,30 @@ class ApiService {
         if (nested is List) {
           return nested;
         }
+
+        if (nested is Map<String, dynamic>) {
+          return [nested];
+        }
+
+        final isSingleNotification = [
+          'title',
+          'message',
+          'content',
+          'body',
+          'description',
+          'notificationType',
+          'type',
+          'storeName',
+          'createdAt',
+          'date',
+          'offer',
+          'announcement',
+        ].any((key) => data.containsKey(key));
+
+        return isSingleNotification ? [data] : [];
       }
+
+      return [];
     }
 
     throw Exception(response.body);

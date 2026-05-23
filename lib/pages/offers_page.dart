@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../Services/api_service.dart';
 import '../Services/offers_service.dart';
 import '../core/session_store.dart';
 
@@ -15,7 +14,7 @@ class _OffersPageState extends State<OffersPage> {
   static const Color pageBg = Color(0xFFF6F6F6);
   static const Color teal = Color(0xFF5FA9BB);
 
-  List<_OfferAnnouncementItem> items = [];
+  List<_OfferItem> items = [];
   bool isLoading = true;
 
   @override
@@ -27,20 +26,13 @@ class _OffersPageState extends State<OffersPage> {
   Future<void> fetchItems() async {
     try {
       final sessionId = SessionStore.current?.sessionId ?? '';
-      final results = await Future.wait([
-        OffersService.getOffers(sessionId),
-        ApiService.getAnnouncements(),
-      ]);
-
-      final offers = results[0].whereType<Map>().map(
-        (item) => _OfferAnnouncementItem.fromOffer(item),
-      );
-      final announcements = results[1].whereType<Map>().map(
-        (item) => _OfferAnnouncementItem.fromAnnouncement(item),
-      );
+      final offersData = await OffersService.getOffers(sessionId);
+      final offers = offersData.whereType<Map>().map(
+        (item) => _OfferItem.fromOffer(item),
+      ).toList();
 
       setState(() {
-        items = [...offers, ...announcements];
+        items = offers;
         isLoading = false;
       });
     } catch (e) {
@@ -84,7 +76,7 @@ class _OffersPageState extends State<OffersPage> {
                   const Positioned.fill(
                     child: Center(
                       child: Text(
-                        'Offers & Announcement',
+                        'Offers',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
@@ -102,13 +94,13 @@ class _OffersPageState extends State<OffersPage> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : items.isEmpty
-                ? const Center(child: Text('No offers or announcements'))
+                ? const Center(child: Text('No offers available'))
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 22, 16, 16),
                     itemCount: items.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 14),
                     itemBuilder: (context, index) {
-                      return _OfferAnnouncementCard(item: items[index]);
+                      return _OfferCard(item: items[index]);
                     },
                   ),
           ),
@@ -118,10 +110,10 @@ class _OffersPageState extends State<OffersPage> {
   }
 }
 
-class _OfferAnnouncementCard extends StatelessWidget {
-  const _OfferAnnouncementCard({required this.item});
+class _OfferCard extends StatelessWidget {
+  const _OfferCard({required this.item});
 
-  final _OfferAnnouncementItem item;
+  final _OfferItem item;
 
   void _showDetails(BuildContext context) {
     showDialog(
@@ -297,15 +289,15 @@ class _OfferAnnouncementCard extends StatelessWidget {
   }
 }
 
-class _OfferAnnouncementItem {
-  const _OfferAnnouncementItem({
+class _OfferItem {
+  const _OfferItem({
     required this.title,
     required this.content,
     required this.date,
   });
 
-  factory _OfferAnnouncementItem.fromOffer(Map<dynamic, dynamic> json) {
-    return _OfferAnnouncementItem(
+  factory _OfferItem.fromOffer(Map<dynamic, dynamic> json) {
+    return _OfferItem(
       title: _stringValue(json, ['title', 'name'], 'Offer'),
       content: _stringValue(json, [
         'description',
@@ -314,19 +306,6 @@ class _OfferAnnouncementItem {
         'body',
       ], 'No details available'),
       date: _dateValue(json, ['startAt', 'start_at', 'madeAt', 'made_at']),
-    );
-  }
-
-  factory _OfferAnnouncementItem.fromAnnouncement(Map<dynamic, dynamic> json) {
-    return _OfferAnnouncementItem(
-      title: _stringValue(json, ['title', 'name'], 'Announcement'),
-      content: _stringValue(json, [
-        'content',
-        'description',
-        'message',
-        'body',
-      ], 'No details available'),
-      date: _dateValue(json, ['createdAt', 'created_at', 'date', 'madeAt']),
     );
   }
 

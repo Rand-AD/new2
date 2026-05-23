@@ -101,7 +101,7 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 16),
 
           _SectionHeader(
-            title: 'Offers & Announcement',
+            title: 'Offers',
             onViewAll: () {
               Navigator.push(
                 context,
@@ -111,7 +111,7 @@ class _HomePageState extends State<HomePage> {
           ),
 
           const SizedBox(height: 10),
-          const _AnnouncementsList(),
+          const _OffersList(),
 
           const SizedBox(height: 16),
 
@@ -614,12 +614,12 @@ class _HorizontalCoupons extends StatefulWidget {
   State<_HorizontalCoupons> createState() => _HorizontalCouponsState();
 }
 
-class _AnnouncementCard extends StatelessWidget {
+class _OfferCard extends StatelessWidget {
   final String title;
   final String content;
   final String date;
 
-  const _AnnouncementCard({
+  const _OfferCard({
     required this.title,
     required this.content,
     this.date = '',
@@ -791,15 +791,15 @@ class _AnnouncementCard extends StatelessWidget {
   }
 }
 
-class _OfferAnnouncementItem {
-  const _OfferAnnouncementItem({
+class _OfferItem {
+  const _OfferItem({
     required this.title,
     required this.content,
     required this.date,
   });
 
-  factory _OfferAnnouncementItem.fromOffer(Map<dynamic, dynamic> json) {
-    return _OfferAnnouncementItem(
+  factory _OfferItem.fromOffer(Map<dynamic, dynamic> json) {
+    return _OfferItem(
       title: _stringValue(json, ['title', 'name'], 'Offer'),
       content: _stringValue(json, [
         'description',
@@ -808,19 +808,6 @@ class _OfferAnnouncementItem {
         'body',
       ], 'No details available'),
       date: _dateValue(json, ['startAt', 'start_at', 'madeAt', 'made_at']),
-    );
-  }
-
-  factory _OfferAnnouncementItem.fromAnnouncement(Map<dynamic, dynamic> json) {
-    return _OfferAnnouncementItem(
-      title: _stringValue(json, ['title', 'name'], 'Announcement'),
-      content: _stringValue(json, [
-        'content',
-        'description',
-        'message',
-        'body',
-      ], 'No details available'),
-      date: _dateValue(json, ['createdAt', 'created_at', 'date', 'madeAt']),
     );
   }
 
@@ -1307,40 +1294,33 @@ class _HomeBottomNavBar extends StatelessWidget {
   }
 }
 
-class _AnnouncementsList extends StatefulWidget {
-  const _AnnouncementsList();
+class _OffersList extends StatefulWidget {
+  const _OffersList();
 
   @override
-  State<_AnnouncementsList> createState() => _AnnouncementsListState();
+  State<_OffersList> createState() => _OffersListState();
 }
 
-class _AnnouncementsListState extends State<_AnnouncementsList> {
-  List<_OfferAnnouncementItem> items = [];
+class _OffersListState extends State<_OffersList> {
+  List<_OfferItem> items = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchAnnouncements();
+    fetchOffers();
   }
 
-  Future<void> fetchAnnouncements() async {
+  Future<void> fetchOffers() async {
     try {
       final sessionId = SessionStore.current?.sessionId ?? '';
-      final results = await Future.wait([
-        OffersService.getOffers(sessionId),
-        ApiService.getAnnouncements(),
-      ]);
-
-      final offers = results[0].whereType<Map>().map(
-        (item) => _OfferAnnouncementItem.fromOffer(item),
-      );
-      final announcements = results[1].whereType<Map>().map(
-        (item) => _OfferAnnouncementItem.fromAnnouncement(item),
-      );
+      final offersData = await OffersService.getOffers(sessionId);
+      final offers = offersData.whereType<Map>().map(
+        (item) => _OfferItem.fromOffer(item),
+      ).toList();
 
       setState(() {
-        items = [...offers, ...announcements];
+        items = offers;
         isLoading = false;
       });
     } catch (e) {
@@ -1358,7 +1338,7 @@ class _AnnouncementsListState extends State<_AnnouncementsList> {
     if (items.isEmpty) {
       return const SizedBox(
         height: 98,
-        child: Center(child: Text("No offers or announcements")),
+        child: Center(child: Text("No offers available")),
       );
     }
 
@@ -1371,7 +1351,7 @@ class _AnnouncementsListState extends State<_AnnouncementsList> {
         itemBuilder: (context, index) {
           final item = items[index];
 
-          return _AnnouncementCard(
+          return _OfferCard(
             title: item.title,
             content: item.content,
             date: item.date,

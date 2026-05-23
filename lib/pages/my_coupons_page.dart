@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../core/coupon_status.dart';
 import '../core/session_store.dart';
+import '../widgets/code128_barcode.dart';
 import '../widgets/reward_coupon_card.dart';
 import '../widgets/rewards_header.dart';
 import 'coupon_page.dart';
@@ -207,65 +208,72 @@ class _SerialNumberDialog extends StatelessWidget {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Container(
-        width: 318,
-        height: 202,
+        width: 292,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: const Color(0xFF1F6673), width: 4),
         ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: 2,
-              right: 2,
-              child: IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.close, color: Colors.grey.shade700, size: 28),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 44, 24, 24),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Your redemption code is :',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF2B6E7F),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                      ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 6, 22, 22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.close,
+                      color: Colors.grey.shade700,
+                      size: 26,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      hasSerialNumber ? formattedCode : 'Unavailable',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF2B6E7F),
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Show this code to the cashier to redeem your offer',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF606060),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        height: 1.2,
-                      ),
-                    ),
-                  ],
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              const Text(
+                'Your redemption code is :',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF2B6E7F),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                hasSerialNumber ? formattedCode : 'Unavailable',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF2B6E7F),
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Show this code to the cashier to redeem your offer',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF606060),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  height: 1.2,
+                ),
+              ),
+              if (hasSerialNumber) ...[
+                const SizedBox(height: 16),
+                _CouponBarcode(data: _barcodeValue(serialNumber)),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -286,5 +294,25 @@ class _SerialNumberDialog extends StatelessWidget {
     }
 
     return buffer.toString();
+  }
+
+  String _barcodeValue(String value) {
+    return value.replaceAll(RegExp(r'\s+'), '').trim();
+  }
+}
+
+class _CouponBarcode extends StatelessWidget {
+  const _CouponBarcode({required this.data});
+
+  final String data;
+
+  @override
+  Widget build(BuildContext context) {
+    return Code128Barcode(
+      data: data,
+      width: 220,
+      height: 52,
+      label: 'Coupon barcode for $data',
+    );
   }
 }

@@ -17,6 +17,7 @@ class NotificationsPage extends StatefulWidget {
 class _NotificationsPageState extends State<NotificationsPage> {
   List<_NotificationItem> items = [];
   bool isLoading = true;
+  String errorMessage = '';
 
   @override
   void initState() {
@@ -28,17 +29,59 @@ class _NotificationsPageState extends State<NotificationsPage> {
     try {
       final data = await ApiService.getNotifications();
 
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
         items = data
             .whereType<Map>()
             .map((item) => _NotificationItem.fromJson(item))
             .toList();
         isLoading = false;
+        errorMessage = '';
       });
     } catch (e) {
       debugPrint('NOTIFICATIONS ERROR = $e');
-      setState(() => isLoading = false);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Failed to load notifications';
+      });
     }
+  }
+
+  Widget _buildNotificationsBody() {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (errorMessage.isNotEmpty) {
+      return Center(
+        child: Text(errorMessage, style: const TextStyle(fontSize: 16)),
+      );
+    }
+
+    if (items.isEmpty) {
+      return const Center(
+        child: Text('No notifications', style: TextStyle(fontSize: 16)),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: fetchNotifications,
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 24, 12, 16),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          return _NotificationCard(item: items[index]);
+        },
+      ),
+    );
   }
 
   @override
@@ -98,25 +141,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               ),
             ),
           ),
-          Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : items.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No notifications',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 24, 12, 16),
-                    itemCount: items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      return _NotificationCard(item: items[index]);
-                    },
-                  ),
-          ),
+          Expanded(child: _buildNotificationsBody()),
         ],
       ),
     );
@@ -130,43 +155,97 @@ class _NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 60,
-      child: Stack(
-        clipBehavior: Clip.none,
+    return Container(
+      constraints: const BoxConstraints(minHeight: 82),
+      padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
+      decoration: BoxDecoration(
+        color: NotificationsPage.teal,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 5,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(70, 11, 12, 7),
-              decoration: BoxDecoration(
-                color: NotificationsPage.teal,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x33000000),
-                    blurRadius: 5,
-                    offset: Offset(0, 3),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/images/logo3.png',
+                  width: 42,
+                  height: 42,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.notifications_none,
+                    color: NotificationsPage.tealDark,
+                    size: 30,
                   ),
-                ],
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    if (!item.isRead) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 8,
+                        height: 8,
+                        margin: const EdgeInsets.only(top: 4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                if (item.message.isNotEmpty) ...[
+                  const SizedBox(height: 5),
                   Text(
-                    item.title,
-                    maxLines: 1,
+                    item.message,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      height: 1.18,
                     ),
                   ),
-                  const Spacer(),
+                ],
+                if (item.date.isNotEmpty) ...[
+                  const SizedBox(height: 6),
                   Text(
                     item.date,
                     textAlign: TextAlign.right,
@@ -177,34 +256,7 @@ class _NotificationCard extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-            ),
-          ),
-          Positioned(
-            left: 8,
-            top: 6,
-            child: Container(
-              width: 52,
-              height: 52,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/images/logo3.png',
-                    width: 42,
-                    height: 42,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.shopping_bag,
-                      color: NotificationsPage.tealDark,
-                      size: 30,
-                    ),
-                  ),
-                ),
-              ),
+              ],
             ),
           ),
         ],
@@ -214,43 +266,112 @@ class _NotificationCard extends StatelessWidget {
 }
 
 class _NotificationItem {
-  const _NotificationItem({required this.title, required this.date});
+  const _NotificationItem({
+    required this.title,
+    required this.message,
+    required this.date,
+    required this.isRead,
+  });
 
   factory _NotificationItem.fromJson(Map<dynamic, dynamic> json) {
-    final title = _stringValue(json, [
+    var title = _stringValue(json, [
       'title',
+      'notificationTitle',
+      'subject',
+      'heading',
+      'name',
+    ]);
+
+    var message = _stringValue(json, [
       'message',
+      'notificationMessage',
       'content',
       'body',
       'description',
+      'details',
       'text',
     ]);
-    final storeName = _stringValue(json, ['storeName', 'store_name', 'name']);
+
+    final type = _stringValue(json, [
+      'type',
+      'notificationType',
+      'category',
+      'eventType',
+    ]);
+    final storeName = _firstNonEmpty([
+      _stringValue(json, ['storeName', 'store_name', 'shopName']),
+      _nestedString(json, 'store', ['name', 'storeName', 'store_name']),
+      _nestedString(json, 'shop', ['name', 'shopName']),
+    ]);
+    final offerTitle = _nestedString(json, 'offer', ['title', 'name']);
+    final announcementTitle = _nestedString(json, 'announcement', [
+      'title',
+      'name',
+    ]);
+
+    if (title.isEmpty) {
+      if (offerTitle.isNotEmpty) {
+        title = offerTitle;
+      } else if (announcementTitle.isNotEmpty) {
+        title = announcementTitle;
+      } else if (type.isNotEmpty) {
+        title = _titleCase(type);
+      } else if (storeName.isNotEmpty) {
+        title = '$storeName has an update';
+      } else {
+        title = 'Notification';
+      }
+    }
+
+    if (message.isEmpty) {
+      message = _firstNonEmpty([
+        _nestedString(json, 'offer', [
+          'description',
+          'content',
+          'message',
+          'body',
+        ]),
+        _nestedString(json, 'announcement', [
+          'content',
+          'description',
+          'message',
+          'body',
+        ]),
+      ]);
+    }
+
+    if (message.isEmpty && storeName.isNotEmpty) {
+      message = type.toLowerCase().contains('offer')
+          ? '$storeName has an offer'
+          : 'New update from $storeName';
+    }
 
     return _NotificationItem(
-      title: title.isNotEmpty
-          ? title
-          : storeName.isNotEmpty
-          ? '$storeName has an offer'
-          : 'Notification',
+      title: title,
+      message: message,
       date: _formatDate(
         _stringValue(json, [
           'date',
           'createdAt',
           'created_at',
+          'createdOn',
           'sentAt',
           'sent_at',
           'madeAt',
           'made_at',
           'updatedAt',
+          'timestamp',
           'startAt',
         ]),
       ),
+      isRead: _boolValue(json, ['isRead', 'read', 'seen', 'viewed']),
     );
   }
 
   final String title;
+  final String message;
   final String date;
+  final bool isRead;
 
   static String _stringValue(Map<dynamic, dynamic> json, List<String> keys) {
     for (final key in keys) {
@@ -261,6 +382,68 @@ class _NotificationItem {
     }
 
     return '';
+  }
+
+  static String _nestedString(
+    Map<dynamic, dynamic> json,
+    String parentKey,
+    List<String> keys,
+  ) {
+    final value = json[parentKey];
+    if (value is! Map) {
+      return '';
+    }
+
+    return _stringValue(value, keys);
+  }
+
+  static String _firstNonEmpty(List<String> values) {
+    for (final value in values) {
+      if (value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+
+    return '';
+  }
+
+  static bool _boolValue(Map<dynamic, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value is bool) {
+        return value;
+      }
+
+      if (value is num) {
+        return value != 0;
+      }
+
+      final text = value?.toString().trim().toLowerCase();
+      if (text == 'true' || text == 'yes' || text == '1') {
+        return true;
+      }
+
+      if (text == 'false' || text == 'no' || text == '0') {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  static String _titleCase(String value) {
+    return value
+        .replaceAll('_', ' ')
+        .trim()
+        .split(RegExp(r'\s+'))
+        .map((word) {
+          if (word.isEmpty) {
+            return word;
+          }
+
+          return '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}';
+        })
+        .join(' ');
   }
 
   static String _formatDate(String value) {
