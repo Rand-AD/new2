@@ -33,23 +33,40 @@ class RewardCouponCard extends StatelessWidget {
   String get startDate => CouponStatus.dateValue(coupon, [
     'startDate',
     'startsAt',
+    'startAt',
     'validFrom',
+    'validFromDate',
+    'fromDate',
+    'beginDate',
+    'beginsAt',
+    'availableFrom',
+    'couponStartDate',
     'createdAt',
+    'createdOn',
+    'date',
   ]);
 
   String get endDate => CouponStatus.dateValue(coupon, [
     'endDate',
     'endsAt',
+    'endAt',
     'validTo',
+    'validUntil',
+    'validThrough',
     'expirationDate',
+    'expiresAt',
     'expiredAt',
+    'expiredDate',
     'expiryDate',
+    'expiryAt',
+    'toDate',
+    'couponEndDate',
   ]);
 
   @override
   Widget build(BuildContext context) {
-    final displayStart = startDate.isEmpty ? '1 Mar 2026' : startDate;
-    final displayEnd = endDate.isEmpty ? '20 Mar 2026' : endDate;
+    final displayStart = startDate.isEmpty ? '-' : startDate;
+    final displayEnd = endDate.isEmpty ? '-' : endDate;
     final cardColor = isFaded ? Colors.grey.shade200 : Colors.white;
     final topColor = isFaded ? Colors.grey.shade400 : const Color(0xFF2B6E7F);
     final isUsed = statusLabel.toUpperCase() == 'USED';

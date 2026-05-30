@@ -55,6 +55,71 @@ class ApiService {
     return {"Content-Type": "application/json", "X-Session-Id": sessionId};
   }
 
+  static Future<int> getUserPoints() async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/userinfo/points"),
+      headers: headers,
+    );
+
+    debugPrint("POINTS STATUS = ${response.statusCode}");
+    debugPrint("POINTS BODY = ${response.body}");
+
+    if (response.statusCode != 200) {
+      throw Exception(response.body);
+    }
+
+    final data = jsonDecode(response.body);
+
+    if (data is num || data is String) {
+      return _intValue(data);
+    }
+
+    if (data is Map<String, dynamic>) {
+      final value =
+          data['totalPoints'] ??
+          data['points'] ??
+          data['balance'] ??
+          data['pointBalance'] ??
+          data['data'];
+
+      if (value is Map<String, dynamic>) {
+        return _intValue(
+          value['totalPoints'] ??
+              value['points'] ??
+              value['balance'] ??
+              value['pointBalance'],
+        );
+      }
+
+      return _intValue(value);
+    }
+
+    return 0;
+  }
+
+  static Future<int> refreshUserPoints() async {
+    final points = await getUserPoints();
+    final session = SessionStore.current;
+
+    if (session != null) {
+      await SessionStore.save(session.copyWith(totalPoints: points));
+    }
+
+    return points;
+  }
+
+  static int _intValue(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse((value ?? '0').toString()) ?? 0;
+  }
+
   // ================= GET ANNOUNCEMENTS =================
   static Future<List<dynamic>> getAnnouncements() async {
     final response = await http.get(

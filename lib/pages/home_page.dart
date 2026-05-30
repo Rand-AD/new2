@@ -4,6 +4,7 @@ import 'package:g_project/Services/api_service.dart';
 import 'package:g_project/Services/offers_service.dart';
 import 'package:g_project/pages/login_page.dart';
 
+import '../core/notification_service.dart';
 import '../core/session_store.dart';
 import 'profile_page.dart';
 import 'notifications_page.dart';
@@ -34,6 +35,23 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.instance.initialize();
+      _refreshUserPoints();
+    });
+  }
+
+  Future<void> _refreshUserPoints() async {
+    try {
+      await ApiService.refreshUserPoints();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {});
+    } catch (e) {
+      debugPrint('HOME POINTS REFRESH ERROR = $e');
+    }
   }
 
   String _formatPoints(int points) {
@@ -64,70 +82,74 @@ class _HomePageState extends State<HomePage> {
         ? _formatPoints(session.totalPoints)
         : '0';
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Builder(
-            builder: (context) {
-              return _TopHomeSection(
-                userName: name,
-                name: name,
-                phone: phone,
-                points: points,
-                onMenuTap: () {
-                  Scaffold.of(context).openDrawer();
-                },
-              );
-            },
-          ),
+    return RefreshIndicator(
+      onRefresh: _refreshUserPoints,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Builder(
+              builder: (context) {
+                return _TopHomeSection(
+                  userName: name,
+                  name: name,
+                  phone: phone,
+                  points: points,
+                  onMenuTap: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                );
+              },
+            ),
 
-          const SizedBox(height: 6),
+            const SizedBox(height: 6),
 
-          _SectionHeader(
-            title: 'Coupons',
-            onViewAll: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CouponPage()),
-              );
-            },
-          ),
+            _SectionHeader(
+              title: 'Coupons',
+              onViewAll: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CouponPage()),
+                );
+              },
+            ),
 
-          const SizedBox(height: 8),
-          const _HorizontalCoupons(),
+            const SizedBox(height: 8),
+            const _HorizontalCoupons(),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          _SectionHeader(
-            title: 'Offers',
-            onViewAll: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const OffersPage()),
-              );
-            },
-          ),
+            _SectionHeader(
+              title: 'Offers',
+              onViewAll: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const OffersPage()),
+                );
+              },
+            ),
 
-          const SizedBox(height: 10),
-          const _OffersList(),
+            const SizedBox(height: 10),
+            const _OffersList(),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          _SectionHeader(
-            title: 'Shops',
-            onViewAll: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ShopsPage()),
-              );
-            },
-          ),
+            _SectionHeader(
+              title: 'Shops',
+              onViewAll: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ShopsPage()),
+                );
+              },
+            ),
 
-          const SizedBox(height: 10),
-          const _ShopsGrid(),
-        ],
+            const SizedBox(height: 10),
+            const _ShopsGrid(),
+          ],
+        ),
       ),
     );
   }
@@ -212,6 +234,7 @@ class _HomePageState extends State<HomePage> {
                       ElevatedButton(
                         onPressed: () async {
                           Navigator.pop(dialogContext);
+                          NotificationService.instance.stop();
                           await SessionStore.clear();
 
                           if (!mounted) return;
@@ -272,6 +295,18 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: pageBg,
         drawer: _HomeDrawer(
           name: name,
+          onProfileTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfilePage()),
+            );
+
+            if (!mounted) {
+              return;
+            }
+
+            _refreshUserPoints();
+          },
           onLogoutTap: () => _showLogoutDialog(context),
         ),
         bottomNavigationBar: _HomeBottomNavBar(
@@ -280,6 +315,10 @@ class _HomePageState extends State<HomePage> {
             setState(() {
               _currentIndex = index;
             });
+
+            if (index == 0 || index == 4) {
+              _refreshUserPoints();
+            }
           },
         ),
         body: _getPage(),
@@ -1097,9 +1136,14 @@ class _ShopsGridState extends State<_ShopsGrid> {
 }
 
 class _HomeDrawer extends StatelessWidget {
-  const _HomeDrawer({required this.name, required this.onLogoutTap});
+  const _HomeDrawer({
+    required this.name,
+    required this.onProfileTap,
+    required this.onLogoutTap,
+  });
 
   final String name;
+  final VoidCallback onProfileTap;
   final VoidCallback onLogoutTap;
 
   @override
@@ -1169,10 +1213,7 @@ class _HomeDrawer extends StatelessWidget {
             title: 'Profile',
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfilePage()),
-              );
+              onProfileTap();
             },
           ),
           _DrawerTile(
@@ -1315,9 +1356,10 @@ class _OffersListState extends State<_OffersList> {
     try {
       final sessionId = SessionStore.current?.sessionId ?? '';
       final offersData = await OffersService.getOffers(sessionId);
-      final offers = offersData.whereType<Map>().map(
-        (item) => _OfferItem.fromOffer(item),
-      ).toList();
+      final offers = offersData
+          .whereType<Map>()
+          .map((item) => _OfferItem.fromOffer(item))
+          .toList();
 
       setState(() {
         items = offers;

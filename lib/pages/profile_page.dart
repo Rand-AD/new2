@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../Services/api_service.dart';
 import '../core/session_store.dart';
 import '../widgets/code128_barcode.dart';
 import 'my_coupons_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, this.onBack});
 
   final VoidCallback? onBack;
@@ -14,6 +15,30 @@ class ProfilePage extends StatelessWidget {
   static const Color tealSoft = Color(0xFFEAF5F7);
   static const Color pageBg = Color(0xFFF6F6F6);
   static const Color textMuted = Color(0xFF6F7A7D);
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+    _refreshPoints();
+  }
+
+  Future<void> _refreshPoints() async {
+    try {
+      await ApiService.refreshUserPoints();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {});
+    } catch (e) {
+      debugPrint('PROFILE POINTS REFRESH ERROR = $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,19 +55,19 @@ class ProfilePage extends StatelessWidget {
     final phone = (session?.phoneNumber.trim().isNotEmpty ?? false)
         ? session!.phoneNumber.trim()
         : '0712345678';
-    final points = session?.totalPoints ?? 1000000;
+    final points = session?.totalPoints ?? 0;
 
     return PopScope(
-      canPop: onBack == null,
+      canPop: widget.onBack == null,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop || onBack == null) {
+        if (didPop || widget.onBack == null) {
           return;
         }
 
-        onBack!();
+        widget.onBack!();
       },
       child: Scaffold(
-        backgroundColor: pageBg,
+        backgroundColor: ProfilePage.pageBg,
         body: Column(
           children: [
             _ProfileHeader(
@@ -52,30 +77,34 @@ class ProfilePage extends StatelessWidget {
               onBack: () => _handleBack(context),
             ),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
-                children: [
-                  _PointsPanel(points: _formatPoints(points)),
-                  const SizedBox(height: 14),
-                  _BarcodePanel(phone: phone),
-                  const SizedBox(height: 14),
-                  _DetailsPanel(
-                    firstName: firstName,
-                    lastName: lastName,
-                    phone: phone,
-                  ),
-                  const SizedBox(height: 16),
-                  _MyCouponsButton(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const MyCouponsPage(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+              child: RefreshIndicator(
+                onRefresh: _refreshPoints,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+                  children: [
+                    _PointsPanel(points: _formatPoints(points)),
+                    const SizedBox(height: 14),
+                    _BarcodePanel(phone: phone),
+                    const SizedBox(height: 14),
+                    _DetailsPanel(
+                      firstName: firstName,
+                      lastName: lastName,
+                      phone: phone,
+                    ),
+                    const SizedBox(height: 16),
+                    _MyCouponsButton(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MyCouponsPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -85,8 +114,8 @@ class ProfilePage extends StatelessWidget {
   }
 
   void _handleBack(BuildContext context) {
-    if (onBack != null) {
-      onBack!();
+    if (widget.onBack != null) {
+      widget.onBack!();
       return;
     }
 
@@ -362,7 +391,7 @@ class _BarcodePanel extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Code128Barcode(
-                    data: ProfilePage._barcodePhone(phone),
+                    data: _ProfilePageState._barcodePhone(phone),
                     width: barcodeWidth,
                     height: 70,
                     label: 'Phone barcode for $phone',

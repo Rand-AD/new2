@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../core/coupon_status.dart';
 import '../core/session_store.dart';
 import '../widgets/rewards_header.dart';
 import 'history_page.dart';
@@ -205,6 +206,18 @@ class _CouponCard extends StatelessWidget {
 
   static const Color teal = Color(0xFF2B6E7F);
 
+  Map<String, dynamic> get couponMap {
+    if (coupon is Map<String, dynamic>) {
+      return coupon as Map<String, dynamic>;
+    }
+
+    if (coupon is Map) {
+      return Map<String, dynamic>.from(coupon as Map);
+    }
+
+    return {};
+  }
+
   String get title => _stringValue(['title', 'type', 'couponType'], 'Coupon');
 
   String get description =>
@@ -265,32 +278,7 @@ class _CouponCard extends StatelessWidget {
   }
 
   String _dateValue(List<String> keys) {
-    final raw = _stringValue(keys, '');
-    if (raw.isEmpty) {
-      return '';
-    }
-
-    final parsed = DateTime.tryParse(raw);
-    if (parsed == null) {
-      return raw.split('T').first;
-    }
-
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-
-    return '${parsed.day} ${months[parsed.month - 1]} ${parsed.year}';
+    return CouponStatus.dateValue(couponMap, keys);
   }
 
   void _showDescription(BuildContext context) {
@@ -333,18 +321,36 @@ class _CouponCard extends StatelessWidget {
     final startDate = _dateValue([
       'startDate',
       'startsAt',
+      'startAt',
       'validFrom',
+      'validFromDate',
+      'fromDate',
+      'beginDate',
+      'beginsAt',
+      'availableFrom',
+      'couponStartDate',
       'createdAt',
+      'createdOn',
+      'date',
     ]);
     final endDate = _dateValue([
       'endDate',
       'endsAt',
+      'endAt',
       'validTo',
+      'validUntil',
+      'validThrough',
       'expirationDate',
+      'expiresAt',
       'expiredAt',
+      'expiredDate',
+      'expiryDate',
+      'expiryAt',
+      'toDate',
+      'couponEndDate',
     ]);
-    final displayStartDate = startDate.isEmpty ? '1 Mar 2026' : startDate;
-    final displayEndDate = endDate.isEmpty ? '20 Mar 2026' : endDate;
+    final displayStartDate = startDate.isEmpty ? '-' : startDate;
+    final displayEndDate = endDate.isEmpty ? '-' : endDate;
 
     return GestureDetector(
       onTap: () => _showDescription(context),

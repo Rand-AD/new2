@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/notification_service.dart';
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -12,6 +14,56 @@ class _SettingsPageState extends State<SettingsPage> {
   static const Color tealText = Color(0xFF6AAFC1);
 
   bool notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationPreference();
+  }
+
+  Future<void> _loadNotificationPreference() async {
+    final enabled = await NotificationService.instance.isEnabled();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      notificationsEnabled = enabled;
+    });
+  }
+
+  Future<void> _setNotificationsEnabled(bool value) async {
+    if (!value) {
+      await NotificationService.instance.setEnabled(false);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        notificationsEnabled = false;
+      });
+      return;
+    }
+
+    final granted = await NotificationService.instance.requestPermission();
+    await NotificationService.instance.setEnabled(granted);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      notificationsEnabled = granted;
+    });
+
+    if (!granted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please allow notifications from phone settings.'),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,16 +152,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           return Colors.grey.shade300;
                         }),
 
-                        onChanged: (value) {
-                          setState(() {
-                            notificationsEnabled = value;
-                          });
-                        },
+                        onChanged: _setNotificationsEnabled,
                       ),
                       onTap: () {
-                        setState(() {
-                          notificationsEnabled = !notificationsEnabled;
-                        });
+                        _setNotificationsEnabled(!notificationsEnabled);
                       },
                     ),
 

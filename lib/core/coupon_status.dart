@@ -112,13 +112,21 @@ class CouponStatus {
       return true;
     }
 
-    final rawDate = stringValue(coupon, [
+    final rawDate = rawDateValue(coupon, [
       'endDate',
       'endsAt',
+      'endAt',
       'validTo',
+      'validUntil',
+      'validThrough',
       'expirationDate',
+      'expiresAt',
       'expiredAt',
+      'expiredDate',
       'expiryDate',
+      'expiryAt',
+      'toDate',
+      'couponEndDate',
     ]);
 
     if (rawDate.isEmpty) {
@@ -154,8 +162,21 @@ class CouponStatus {
     List<String> keys, [
     String fallback = '',
   ]) {
+    final normalizedKeys = keys.map(_normalizedKey).toSet();
+
     for (final key in keys) {
       final value = coupon[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString().trim();
+      }
+    }
+
+    for (final entry in coupon.entries) {
+      if (!normalizedKeys.contains(_normalizedKey(entry.key.toString()))) {
+        continue;
+      }
+
+      final value = entry.value;
       if (value != null && value.toString().trim().isNotEmpty) {
         return value.toString().trim();
       }
@@ -164,8 +185,17 @@ class CouponStatus {
     return fallback;
   }
 
+  static String rawDateValue(Map<String, dynamic> coupon, List<String> keys) {
+    final direct = stringValue(coupon, keys);
+    if (direct.isNotEmpty) {
+      return direct;
+    }
+
+    return _nestedStringValue(coupon, keys);
+  }
+
   static String dateValue(Map<String, dynamic> coupon, List<String> keys) {
-    final raw = stringValue(coupon, keys);
+    final raw = rawDateValue(coupon, keys);
     if (raw.isEmpty) {
       return '';
     }
@@ -191,6 +221,45 @@ class CouponStatus {
     ];
 
     return '${parsed.day} ${months[parsed.month - 1]} ${parsed.year}';
+  }
+
+  static String _nestedStringValue(dynamic value, List<String> keys) {
+    final normalizedKeys = keys.map(_normalizedKey).toSet();
+
+    if (value is Map) {
+      for (final entry in value.entries) {
+        if (!normalizedKeys.contains(_normalizedKey(entry.key.toString()))) {
+          continue;
+        }
+
+        final entryValue = entry.value;
+        if (entryValue != null && entryValue.toString().trim().isNotEmpty) {
+          return entryValue.toString().trim();
+        }
+      }
+
+      for (final entry in value.entries) {
+        final nested = _nestedStringValue(entry.value, keys);
+        if (nested.isNotEmpty) {
+          return nested;
+        }
+      }
+    }
+
+    if (value is List) {
+      for (final item in value) {
+        final nested = _nestedStringValue(item, keys);
+        if (nested.isNotEmpty) {
+          return nested;
+        }
+      }
+    }
+
+    return '';
+  }
+
+  static String _normalizedKey(String key) {
+    return key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 
   static String serialNumber(dynamic value) {
