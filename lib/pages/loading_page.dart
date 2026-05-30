@@ -35,7 +35,6 @@ class LoadingPage extends StatelessWidget {
               ),
             ),
 
-            // زر Login or Register
             SafeArea(
               child: Align(
                 alignment: Alignment.bottomCenter,

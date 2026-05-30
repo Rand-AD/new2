@@ -30,16 +30,13 @@ class _ChatBotPageState extends State<ChatBotPage> {
     loadHistory();
   }
 
-  // ================= GET HISTORY =================
   Future<void> loadHistory() async {
     try {
       final sessionId = SessionStore.current?.sessionId ?? "";
 
       final response = await http.get(
         Uri.parse("$baseUrl/api/Chatbot/history"),
-        headers: {
-          "X-Session-Id": sessionId, // ✅ FIX
-        },
+        headers: {"X-Session-Id": sessionId},
       );
 
       if (response.statusCode == 200) {
@@ -67,7 +64,6 @@ class _ChatBotPageState extends State<ChatBotPage> {
     }
   }
 
-  // ================= SEND MESSAGE =================
   Future<void> sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
@@ -104,7 +100,7 @@ class _ChatBotPageState extends State<ChatBotPage> {
           });
         }
 
-        return; // 🔥 VERY IMPORTANT (stops chatbot call)
+        return;
       }
 
       final sessionId = SessionStore.current?.sessionId ?? "";
@@ -112,7 +108,7 @@ class _ChatBotPageState extends State<ChatBotPage> {
         Uri.parse("$baseUrl/api/Chatbot/ask"),
         headers: {
           "Content-Type": "application/json",
-          "X-Session-Id": sessionId, // ✅ FIX
+          "X-Session-Id": sessionId,
         },
         body: json.encode({
           "message": text,
@@ -165,7 +161,6 @@ class _ChatBotPageState extends State<ChatBotPage> {
       ),
       body: Column(
         children: [
-          // QUICK BUTTONS
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -219,7 +214,6 @@ class _ChatBotPageState extends State<ChatBotPage> {
             ),
           ),
 
-          // INPUT
           SafeArea(
             child: Container(
               padding: const EdgeInsets.all(12),

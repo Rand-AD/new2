@@ -158,7 +158,6 @@ class _ReceiptPageState extends State<ReceiptPage> {
 
               const SizedBox(height: 20),
 
-              // 🧾 Receipt Card
               Expanded(
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 18),
@@ -177,7 +176,6 @@ class _ReceiptPageState extends State<ReceiptPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 🏬 Store Name
                       Center(
                         child: Text(
                           store,
@@ -201,7 +199,6 @@ class _ReceiptPageState extends State<ReceiptPage> {
 
                       const SizedBox(height: 20),
 
-                      // ✅ Status Badge
                       Center(
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -229,7 +226,6 @@ class _ReceiptPageState extends State<ReceiptPage> {
 
                       const Spacer(),
 
-                      // ⭐ Bottom message
                       Center(
                         child: Text(
                           "Thank you for your purchase 💙",
@@ -252,7 +248,6 @@ class _ReceiptPageState extends State<ReceiptPage> {
     );
   }
 
-  // 🔹 reusable row
   Widget _row(String title, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),

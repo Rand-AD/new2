@@ -89,12 +89,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       trailing: Switch(
                         value: notificationsEnabled,
 
-                        // ✅ الجديد بدل activeThumbColor
                         thumbColor: WidgetStateProperty.resolveWith((states) {
                           return Colors.white;
                         }),
 
-                        // ✅ الجديد بدل activeTrackColor
                         trackColor: WidgetStateProperty.resolveWith((states) {
                           if (states.contains(WidgetState.selected)) {
                             return tealHeader;
