@@ -15,12 +15,17 @@ dependencies:
   dio: ^5.4.0
   dio_cookie_manager: ^3.0.0
   cookie_jar: ^4.0.0
-  shared_preferences: ^2.3.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/logo3.png"
 
 flutter:
   uses-material-design: true
@@ -32,8 +37,7 @@ flutter:
     - assets/images/splash.png
     - assets/images/star(1).png
     - assets/images/bag.png
-    - assets/images/gift1.png
-    - assets/images/gift-voucher.png
+    - assets/images/gift.png
     - assets/images/discount.png
     - assets/images/coupon.png
     - assets/images/logout.png
@@ -42,8 +46,9 @@ flutter:
     - assets/images/subway_logo.png
     - assets/images/coin.png
     - assets/images/mall.jpg
-    - assets/images/logo3.png
+    - assets/images/gift1.png
     - assets/maps/
+
   fonts:
     - family: Judson
       fonts:
