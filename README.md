@@ -37,9 +37,9 @@ The main idea of the app is to replace traditional paper coupons and scattered o
 ## Team Members
 
 - Mera Alsakran
-- Randa Abu Dalu
+- Rand Abu Dalu
 - Mohammad Abdelghani
-- Ahmad Abu Sharia
+- Ahmad AbuShariah
 - Qais Dalahmeh
 
 ## Supervisor
